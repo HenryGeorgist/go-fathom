@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/USACE/go-consequences/hazard_providers"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -33,7 +34,7 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 					return generateDepthEvent(fd_id.Frequency, r.FutureFluvial)
 				} else {
 					//throw error?
-					return nil, HazardError{Input: "Bad Year Argument"}
+					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}
 				}
 
 			} else {
@@ -43,14 +44,14 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 					return generateDepthEvent(fd_id.Frequency, r.FuturePluvial)
 				} else {
 					//throw error?
-					return nil, HazardError{Input: "Bad Year Argument"}
+					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}
 				}
 			}
 		} else {
-			return nil, NoHazardFoundError{Input: fd_id.Fd_id}
+			return nil, hazard_providers.NoHazardFoundError{Input: fd_id.Fd_id}
 		}
 	} else {
-		return nil, HazardError{Input: "Unable to parse args to hazard_providers.FathomQuery"}
+		return nil, hazard_providers.HazardError{Input: "Unable to parse args to hazard_providers.FathomQuery"}
 	}
 }
 func (sds SQLDataSet) getRecord(fd_id string) (Record, bool) {

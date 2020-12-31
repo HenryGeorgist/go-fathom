@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/USACE/go-consequences/hazard_providers"
 	"github.com/USACE/go-consequences/hazards"
 )
 
@@ -48,7 +49,7 @@ func (ds DataSet) ProvideHazard(args interface{}) (interface{}, error) {
 					return generateDepthEvent(fd_id.Frequency, r.FutureFluvial)
 				} else {
 					//throw error?
-					return nil, HazardError{Input: "Bad Year Argument"}
+					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}
 				}
 
 			} else {
@@ -58,14 +59,14 @@ func (ds DataSet) ProvideHazard(args interface{}) (interface{}, error) {
 					return generateDepthEvent(fd_id.Frequency, r.FuturePluvial)
 				} else {
 					//throw error?
-					return nil, HazardError{Input: "Bad Year Argument"}
+					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}
 				}
 			}
 		} else {
-			return nil, NoHazardFoundError{Input: fd_id.Fd_id}
+			return nil, hazard_providers.NoHazardFoundError{Input: fd_id.Fd_id}
 		}
 	} else {
-		return nil, HazardError{Input: "Unable to parse args to hazard_providers.FathomQuery"}
+		return nil, hazard_providers.HazardError{Input: "Unable to parse args to hazard_providers.FathomQuery"}
 	}
 }
 func generateDepthEvent(frequency int, data FrequencyData) (hazards.DepthEvent, error) {
@@ -81,7 +82,7 @@ func generateDepthEvent(frequency int, data FrequencyData) (hazards.DepthEvent, 
 	case 500:
 		return hazards.DepthEvent{Depth: data.Values[4]}, nil
 	default:
-		return hazards.DepthEvent{}, NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
+		return hazards.DepthEvent{}, hazard_providers.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
 	}
 }
 func ConvertFile(file string) DataSet {

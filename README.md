@@ -1,6 +1,6 @@
-# go-consequences
+# go-fathom
 
-An Economic Consequences Library written in Golang
+A package to leverage go-consequences with fathom data
 
 This library provides tools to support evaluating natural hazards interacting with concequence receptors. An example would be a flood represented by depth interacting with a residential structure to produce an estimate of economic losses at the residential structure.
 
