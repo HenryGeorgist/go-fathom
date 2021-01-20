@@ -11,15 +11,19 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+//SQLDataSet is a simple struct to store a sql dataset
 type SQLDataSet struct {
 	db *sql.DB
 }
 
+//OpenSQLDepthDataSet opens a sqldataset
 func OpenSQLDepthDataSet() SQLDataSet {
 	db, _ := sql.Open("sqlite3", "./fathom-depths.db")
 
 	return SQLDataSet{db: db}
 }
+
+//ProvideHazard fulfils the HazardProvier interface from go-consequences
 func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 	fd_id, ok := args.(FathomQuery)
 
