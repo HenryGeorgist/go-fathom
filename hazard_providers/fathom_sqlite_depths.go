@@ -29,13 +29,15 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 
 	if ok {
 		r, found := sds.getRecord(fd_id.Fd_id) //make a query for a row...
-
+		if fd_id.NewData {
+			return nil, hazard_providers.HazardError{Input: "Sqlite data does not support new data specification."}
+		}
 		if found {
 			if fd_id.Fluvial {
 				if fd_id.Year == 2020 {
-					return generateDepthEvent(fd_id.Frequency, r.CurrentFluvial)
+					return generateDepthEvent(fd_id.Frequency, r.CurrentFluvial, fd_id.NewData)
 				} else if fd_id.Year == 2050 {
-					return generateDepthEvent(fd_id.Frequency, r.FutureFluvial)
+					return generateDepthEvent(fd_id.Frequency, r.FutureFluvial, fd_id.NewData)
 				} else {
 					//throw error?
 					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}
@@ -43,9 +45,9 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 
 			} else {
 				if fd_id.Year == 2020 {
-					return generateDepthEvent(fd_id.Frequency, r.CurrentPluvial)
+					return generateDepthEvent(fd_id.Frequency, r.CurrentPluvial, fd_id.NewData)
 				} else if fd_id.Year == 2050 {
-					return generateDepthEvent(fd_id.Frequency, r.FuturePluvial)
+					return generateDepthEvent(fd_id.Frequency, r.FuturePluvial, fd_id.NewData)
 				} else {
 					//throw error?
 					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}

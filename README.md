@@ -6,43 +6,15 @@ This library provides tools to support evaluating natural hazards interacting wi
 
 ## Packages
 The following packages are in this library:
-- census
 - compute
-- consequences
-- crops
 - hazard_providers
-- hazards
-- nsi
-- paireddata
-- results
 - store
 
-### census
-The census package contains a map of state FIP codes to county FIP codes to support consequences computations and iteration across the entire United States.
-
 ### compute
-The compute package is intended to support the Computable interface which takes a set of request args describing the compute and produces a simulation summary.
-
-### consequences
-The consequences package contains the interfaces behind a consequences receptor and the consequences results. It also contains a map of the current occupancy types supported by the National Structure Inventory (NSI) and an implementation of a structure type for the consequences receptor. This facilitates flood consequence estimation for any structure in the NSI.
-
-### crops
-The crops package contains the logic for agricultural consequences leveraging the NASS CDL data.
+The compute package computes damages for each frequency based event stored in the fathom data, and summarizes it to EAD per structure and writes to database.
 
 ### hazard_providers
-The hazard providers package is designed to fulfil the interface HazardProvider which suports multiple hazard types from multiple hazard sources.
-
-### hazards
-Various hazards are stored in the hazards package, the primary hazard under review is flood, but fire is also functional for the structure consequence receptor
-
-### nsi
-The NSI package provides access to the NSI api bounding box endpoint so that structures can be retrieved for the extent of a grid representing the area of interest ofor a hazard.
-
-### paireddata
-The paireddata object provides a linear interpolation of x and y data. This is used in the representation of depth damage relationships for the occupancy types described by the NSI structures. 
-
-### results
-The results package is a partial attempt to manage the complexity of many different types of consequences computations and results storage.
+The hazard providers package is designed to fulfil the interface HazardProvider with the fathom data.
 
 ### store
 The store package is designed to interoperate with a local sqlite store to provide storage of results from national scale computes.
