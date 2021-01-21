@@ -2,8 +2,10 @@ package hazard_providers
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
+	"github.com/USACE/go-consequences/census"
 	"github.com/USACE/go-consequences/hazards"
 )
 
@@ -25,8 +27,26 @@ func TestReadSqliteEvent(t *testing.T) {
 	fmt.Println(depthevent.Depth)
 }
 func TestWrite(t *testing.T) {
-	WriteBackToDisk(DataSet{})
+	WriteBackToDisk(DataSet{}, "C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\TestOld.csv", false)
+	WriteBackToDisk(DataSet{}, "C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\TestNew.csv", true)
 }
 func TestConvert(t *testing.T) {
-	WriteBackToDisk(ConvertFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths.csv"))
+	WriteBackToDisk(ConvertFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths.csv"), "C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_feet.csv", false)
+}
+func TestConvertNewFile(t *testing.T) {
+	fmap := census.StateToCountyFipsMap()
+	var wg sync.WaitGroup
+	wg.Add(len(fmap))
+	for ss, _ := range fmap {
+		go func(ss string) {
+			defer wg.Done()
+			fmt.Println("Computing " + ss)
+			inpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v.csv", ss)
+			outpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v_feet.csv", ss)
+			WriteBackToDisk(ConvertFile(inpath), outpath, true)
+			fmt.Println(ss + " Complete")
+		}(ss)
+
+	}
+	wg.Wait()
 }

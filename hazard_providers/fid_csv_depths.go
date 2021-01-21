@@ -120,7 +120,7 @@ func ConvertFile(file string) DataSet {
 		return DataSet{}
 	}
 	scanner.Scan()
-	fmt.Println(scanner.Text()) //header row
+	//fmt.Println(scanner.Text()) //header row
 	m := make(map[string]Record)
 	newData := strings.Contains(scanner.Text(), "cstl") //not present in old data.
 	count := 0
@@ -131,14 +131,16 @@ func ConvertFile(file string) DataSet {
 		//fluv_2020_5yr,pluv_2020_5yr,fluv_2020_20yr,pluv_2020_20yr,fluv_2020_100yr,pluv_2020_100yr,fluv_2020_250yr,pluv_2020_250yr,fluv_2020_500yr,pluv_2020_500yr,fluv_2050_5yr,pluv_2050_5yr,fluv_2050_20yr,pluv_2050_20yr,fluv_2050_100yr,pluv_2050_100yr,fluv_2050_250yr,pluv_2050_250yr,fluv_2050_500yr,pluv_2050_500yr
 		//,fluv_2020_2yr,cstl_2020_2yr,fluv_2020_5yr,cstl_2020_5yr,fluv_2020_20yr,cstl_2020_20yr,fluv_2020_100yr,cstl_2020_100yr,fluv_2020_250yr,cstl_2020_250yr,fluv_2020_500yr,cstl_2020_500yr,fluv_2050_2yr,cstl_2050_2yr,fluv_2050_5yr,cstl_2050_5yr,fluv_2050_20yr,cstl_2050_20yr,fluv_2050_100yr,cstl_2050_100yr,fluv_2050_250yr,cstl_2050_250yr,fluv_2050_500yr,cstl_2050_500yr
 		elements := 10
+		size := 5
 		if newData {
 			elements = 12
+			size = 6
 		}
 		fluvial := true
-		cfvals := make([]float64, 5)
-		cpvals := make([]float64, 5)
-		ffvals := make([]float64, 5)
-		fpvals := make([]float64, 5)
+		cfvals := make([]float64, size)
+		cpvals := make([]float64, size)
+		ffvals := make([]float64, size)
+		fpvals := make([]float64, size)
 		twentyTwenty := 0
 		fpidx := 0
 		ffidx := 0
@@ -206,8 +208,10 @@ func ReadFeetFile(file string) DataSet {
 	count := 0
 	newData := strings.Contains(scanner.Text(), "cstl") //not present in old data.
 	elements := 10
+	size := 5
 	if newData {
 		elements = 12
+		size = 6
 	}
 	for scanner.Scan() {
 		lines := strings.Split(scanner.Text(), ",")
@@ -215,10 +219,10 @@ func ReadFeetFile(file string) DataSet {
 		//fmt.Println(fd_id)
 		//fluv_2020_5yr,pluv_2020_5yr,fluv_2020_20yr,pluv_2020_20yr,fluv_2020_100yr,pluv_2020_100yr,fluv_2020_250yr,pluv_2020_250yr,fluv_2020_500yr,pluv_2020_500yr,fluv_2050_5yr,pluv_2050_5yr,fluv_2050_20yr,pluv_2050_20yr,fluv_2050_100yr,pluv_2050_100yr,fluv_2050_250yr,pluv_2050_250yr,fluv_2050_500yr,pluv_2050_500yr
 		fluvial := true
-		cfvals := make([]float64, 5)
-		cpvals := make([]float64, 5)
-		ffvals := make([]float64, 5)
-		fpvals := make([]float64, 5)
+		cfvals := make([]float64, size)
+		cpvals := make([]float64, size)
+		ffvals := make([]float64, size)
+		fpvals := make([]float64, size)
 		twentyTwenty := 0
 		fpidx := 0
 		ffidx := 0
@@ -337,8 +341,8 @@ func check(e error) {
 		panic(e)
 	}
 }
-func WriteBackToDisk(ds DataSet, newData bool) {
-	f, err := os.Create("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Filtered_Feet.csv")
+func WriteBackToDisk(ds DataSet, outputPath string, newData bool) {
+	f, err := os.Create(outputPath)
 	check(err)
 	defer f.Close()
 	//write header.
