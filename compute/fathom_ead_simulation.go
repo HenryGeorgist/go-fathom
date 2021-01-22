@@ -72,14 +72,14 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) 
 						if okd {
 							if depthevent.Depth <= 0 {
 								//skip
-								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam)
-								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc)
+								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam, false)
+								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc, false)
 							} else {
 								r := str.Compute(depthevent)
-								StructureDamage := r.Results[0].(float64) //based on convention - super risky
-								ContentDamage := r.Results[1].(float64)   //based on convention - super risky
-								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam)
-								assignDamage(flu, y, f, ContentDamage, ffdamc, fpdamc, cfdamc, cpdamc)
+								StructureDamage := r.Result.Result[0].(float64) //based on convention - super risky
+								ContentDamage := r.Result.Result[1].(float64)   //based on convention - super risky
+								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam, false)
+								assignDamage(flu, y, f, ContentDamage, ffdamc, fpdamc, cfdamc, cpdamc, false)
 								//transaction[index] = store.CreateResult(str.Name, y, hazard, fmt.Sprint(f), StructureDamage, ContentDamage)
 								//index++
 								//store.WriteToDatabase(stmt, str.Name, y, hazard, fmt.Sprint(f), StructureDamage, ContentDamage)
@@ -172,23 +172,23 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) 
 	fmt.Println("Completed Computing by fips " + fips)
 	return true
 }
-func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, outputFile *os.File, newData bool) bool {
+func ComputeMultiEvent_NSIStream_toFile_withNew(ds hp.HazardProvider, fips string, outputFile *os.File, newData bool) bool {
 	fmt.Println("Downloading NSI by fips " + fips)
 	outputFile.WriteString("FD_ID,X,Y,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
 	years := [2]int{2020, 2050}
-	frequencies := [5]int{5, 20, 100, 250, 500}
+	frequencies := []int{5, 20, 100, 250, 500}
 	freq := []float64{.2, .05, .01, .004, .002}
 	size := 5
 	if newData {
-		frequencies := [5]int{2, 5, 20, 100, 250, 500}
+		frequencies = []int{2, 5, 20, 100, 250, 500}
 		size = 6
 		freq = []float64{.5, .2, .05, .01, 004, .002}
 	}
 	fluvial := [2]bool{true, false}
-	index := 0
+	//index := 0
+	m := structures.OccupancyTypeMap()
+	defaultOcctype := m["RES1-1SNB"]
 	nsi.GetByFipsStream(fips, func(feature nsi.NsiFeature) {
-		m := structures.OccupancyTypeMap()
-		defaultOcctype := m["RES1-1SNB"]
 		str := comp.NsiFeaturetoStructure(feature, m, defaultOcctype)
 		//check to see if the structure exists for a first "default event"
 		fe := hazard_providers.FathomEvent{Year: 2050, Frequency: 500, Fluvial: true}
@@ -213,14 +213,14 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, outputFile *
 						if okd {
 							if depthevent.Depth <= 0 {
 								//skip
-								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam)
-								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc)
+								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam, newData)
+								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc, newData)
 							} else {
 								r := str.Compute(depthevent)
-								StructureDamage := r.Results[0].(float64) //based on convention - super risky
-								ContentDamage := r.Results[1].(float64)   //based on convention - super risky
-								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam)
-								assignDamage(flu, y, f, ContentDamage, ffdamc, fpdamc, cfdamc, cpdamc)
+								StructureDamage := r.Result.Result[0].(float64) //based on convention - super risky
+								ContentDamage := r.Result.Result[1].(float64)   //based on convention - super risky
+								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam, newData)
+								assignDamage(flu, y, f, ContentDamage, ffdamc, fpdamc, cfdamc, cpdamc, newData)
 							}
 						}
 					}
@@ -311,14 +311,14 @@ func ComputeSingleEvent_NSIStream(ds hazard_providers.DataSet, fips string, fe h
 				if depthevent.Depth <= 0 {
 					//skip
 				} else {
-					r := str.ComputeConsequences(depthevent)
+					r := str.Compute(depthevent)
 					if val, ok := rmap[str.DamCat]; ok {
 						val.StructureCount += 1
-						val.StructureDamage += r.Results[0].(float64) //based on convention - super risky
-						val.ContentDamage += r.Results[1].(float64)   //based on convention - super risky
+						val.StructureDamage += r.Result.Result[0].(float64) //based on convention - super risky
+						val.ContentDamage += r.Result.Result[1].(float64)   //based on convention - super risky
 						rmap[str.DamCat] = val
 					} else {
-						rmap[str.DamCat] = comp.SimulationSummaryRow{RowHeader: str.DamCat, StructureCount: 1, StructureDamage: r.Results[0].(float64), ContentDamage: r.Results[1].(float64)}
+						rmap[str.DamCat] = comp.SimulationSummaryRow{RowHeader: str.DamCat, StructureCount: 1, StructureDamage: r.Result.Result[0].(float64), ContentDamage: r.Result.Result[1].(float64)}
 					}
 				}
 			}

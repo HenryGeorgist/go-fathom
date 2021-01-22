@@ -3,6 +3,10 @@ github.com/HenryGeorgist/go-statistics v0.0.0-20200926020757-01f9d4902f65 h1:2dd
 github.com/HenryGeorgist/go-statistics v0.0.0-20200926020757-01f9d4902f65/go.mod h1:nRh6hALDQyZeIOkky6G6Uq+t4nUBWH4BnIBpKEkmxnI=
 github.com/USACE/go-consequences v0.0.0-20210122025726-2fbfc756ef51 h1:Zyvbl1UvuhQ2d3klmoTeKVmeVYjX0D10jMsorvnVlow=
 github.com/USACE/go-consequences v0.0.0-20210122025726-2fbfc756ef51/go.mod h1:YpaZDPywo1b1/uNoxz96xpnf9DiEYHBonnFXb9M1SXU=
+github.com/USACE/go-consequences v0.0.0-20210122035233-6e24be5eb439 h1:UDGp8K4xicI9fywNUr3b+3PoMgozdG8W8nHvVQ7Wccc=
+github.com/USACE/go-consequences v0.0.0-20210122035233-6e24be5eb439/go.mod h1:YpaZDPywo1b1/uNoxz96xpnf9DiEYHBonnFXb9M1SXU=
+github.com/USACE/go-consequences v0.0.0-20210122152442-e23eba6fe169 h1:3xRO1nQKe6QNBBOFaJhGGNL4dJERHXyHg5X/sFkx0iY=
+github.com/USACE/go-consequences v0.0.0-20210122152442-e23eba6fe169/go.mod h1:YpaZDPywo1b1/uNoxz96xpnf9DiEYHBonnFXb9M1SXU=
 github.com/aws/aws-lambda-go v1.19.1 h1:5iUHbIZ2sG6Yq/J1IN3sWm3+vAB1CWwhI21NffLNuNI=
 github.com/aws/aws-lambda-go v1.19.1/go.mod h1:jJmlefzPfGnckuHdXX7/80O3BvUUi12XOkbv4w9SGLU=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=

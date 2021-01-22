@@ -46,11 +46,15 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 }
 
 func TestComputeNewFile(t *testing.T) {
-	ss := "11"
+	ss := "06"
 	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v_feet.csv", ss)
-	ds := ReadFeetFile(path)
+	ds := hazard_providers.ReadFeetFile(path)
 	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_damages_%v.csv", ss)
-	outputFile := os.Open(outputpath)
+	outputFile, error := os.Create(outputpath)
+	defer outputFile.Close()
+	if error != nil {
+		panic(error)
+	}
 	//compute
-	ComputeMultiEvent_NSIStream(ds, ss, outputFile, true)
+	ComputeMultiEvent_NSIStream_toFile_withNew(ds, ss, outputFile, true)
 }
