@@ -3,13 +3,14 @@ package compute
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
 	"github.com/HenryGeorgist/go-fathom/store"
 	"github.com/USACE/go-consequences/census"
 	comp "github.com/USACE/go-consequences/compute"
-	hp "github.com/USACE/go-consequences/hazard_providers"
+	hp "github.com/USACE/go-consequences/hazardproviders"
 	"github.com/USACE/go-consequences/hazards"
 	"github.com/USACE/go-consequences/nsi"
 	"github.com/USACE/go-consequences/structures"
@@ -24,7 +25,7 @@ func ComputeMultiFips_MultiEvent(ds hp.HazardProvider) {
 	for ss, _ := range fmap {
 		go func(state string) {
 			defer wg.Done()
-			ComputeMultiEvent_NSIStream(ds, state, db) //should run the nation at the state level. //probbably could make this concurrent
+			ComputeMultiEvent_NSIStream(ds, state, db)
 		}(ss)
 	}
 	wg.Wait()
@@ -32,7 +33,7 @@ func ComputeMultiFips_MultiEvent(ds hp.HazardProvider) {
 func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) bool {
 	fmt.Println("Downloading NSI by fips " + fips)
 	years := [2]int{2020, 2050}
-	frequencies := [5]int{5, 20, 100, 250, 500}
+	frequencies := [5]int{5, 20, 100, 250, 500} //for new data, this should be {2,5,20, 100, 250,500}//
 	fluvial := [2]bool{true, false}
 	tx, _ := db.Begin()
 	index := 0
@@ -48,7 +49,7 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) 
 		_, err := ds.ProvideHazard(fq)
 		if err == nil {
 			//structure presumably exists?
-			cfdam := make([]float64, 5)
+			cfdam := make([]float64, 5) //for new data this needs to be 6//
 			cpdam := make([]float64, 5)
 			ffdam := make([]float64, 5)
 			fpdam := make([]float64, 5)
@@ -74,7 +75,7 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) 
 								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam)
 								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc)
 							} else {
-								r := str.ComputeConsequences(depthevent)
+								r := str.Compute(depthevent)
 								StructureDamage := r.Results[0].(float64) //based on convention - super risky
 								ContentDamage := r.Results[1].(float64)   //based on convention - super risky
 								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam)
@@ -96,6 +97,7 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) 
 
 			//compute ead's for each of the 4 caases for structure and content.
 			freq := []float64{.2, .05, .01, .004, .002} //5,20,100,250,500
+			//freq:= []float64{.5,.2,.05,.01,004,.002}//for newData
 			cfead := comp.ComputeSpecialEAD(cfdam, freq)
 			cpead := comp.ComputeSpecialEAD(cpdam, freq)
 			ffead := comp.ComputeSpecialEAD(ffdam, freq)
@@ -170,7 +172,98 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) 
 	fmt.Println("Completed Computing by fips " + fips)
 	return true
 }
-func frequencyIndex(frequency int) int {
+func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, outputFile *os.File, newData bool) bool {
+	fmt.Println("Downloading NSI by fips " + fips)
+	outputFile.WriteString("FD_ID,X,Y,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
+	years := [2]int{2020, 2050}
+	frequencies := [5]int{5, 20, 100, 250, 500}
+	freq := []float64{.2, .05, .01, .004, .002}
+	size := 5
+	if newData {
+		frequencies := [5]int{2, 5, 20, 100, 250, 500}
+		size = 6
+		freq = []float64{.5, .2, .05, .01, 004, .002}
+	}
+	fluvial := [2]bool{true, false}
+	index := 0
+	nsi.GetByFipsStream(fips, func(feature nsi.NsiFeature) {
+		m := structures.OccupancyTypeMap()
+		defaultOcctype := m["RES1-1SNB"]
+		str := comp.NsiFeaturetoStructure(feature, m, defaultOcctype)
+		//check to see if the structure exists for a first "default event"
+		fe := hazard_providers.FathomEvent{Year: 2050, Frequency: 500, Fluvial: true}
+		fq := hazard_providers.FathomQuery{Fd_id: str.Name, FathomEvent: fe}
+		_, err := ds.ProvideHazard(fq)
+		if err == nil {
+			cfdam := make([]float64, size)
+			cpdam := make([]float64, size)
+			ffdam := make([]float64, size)
+			fpdam := make([]float64, size)
+			cfdamc := make([]float64, size)
+			cpdamc := make([]float64, size)
+			ffdamc := make([]float64, size)
+			fpdamc := make([]float64, size)
+			for _, flu := range fluvial {
+				for _, y := range years {
+					for _, f := range frequencies {
+						fe = hazard_providers.FathomEvent{Year: y, Frequency: f, Fluvial: flu}
+						fq.FathomEvent = fe
+						result, _ := ds.ProvideHazard(fq)
+						depthevent, okd := result.(hazards.DepthEvent)
+						if okd {
+							if depthevent.Depth <= 0 {
+								//skip
+								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam)
+								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc)
+							} else {
+								r := str.Compute(depthevent)
+								StructureDamage := r.Results[0].(float64) //based on convention - super risky
+								ContentDamage := r.Results[1].(float64)   //based on convention - super risky
+								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam)
+								assignDamage(flu, y, f, ContentDamage, ffdamc, fpdamc, cfdamc, cpdamc)
+							}
+						}
+					}
+
+				}
+			}
+			//compute ead's for each of the 4 caases for structure and content.
+			cfead := comp.ComputeSpecialEAD(cfdam, freq)
+			cpead := comp.ComputeSpecialEAD(cpdam, freq)
+			ffead := comp.ComputeSpecialEAD(ffdam, freq)
+			fpead := comp.ComputeSpecialEAD(fpdam, freq)
+
+			cfeadc := comp.ComputeSpecialEAD(cfdamc, freq)
+			cpeadc := comp.ComputeSpecialEAD(cpdamc, freq)
+			ffeadc := comp.ComputeSpecialEAD(ffdamc, freq)
+			fpeadc := comp.ComputeSpecialEAD(fpdamc, freq)
+			//write to output file.
+			outputFile.WriteString(fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f\n", str.Name, str.X, str.Y, cfead+cfeadc, cpead+cpeadc, ffead+ffeadc, fpead+fpeadc))
+		}
+	})
+
+	fmt.Println("Completed Computing by fips " + fips)
+	return true
+}
+func frequencyIndex(frequency int, newData bool) int {
+	if newData {
+		switch frequency {
+		case 2:
+			return 0
+		case 5:
+			return 1
+		case 20:
+			return 2
+		case 100:
+			return 3
+		case 250:
+			return 4
+		case 500:
+			return 5
+		default:
+			return -1 //bad frequency
+		}
+	}
 	switch frequency {
 	case 5:
 		return 0
@@ -186,18 +279,18 @@ func frequencyIndex(frequency int) int {
 		return -1 //bad frequency
 	}
 }
-func assignDamage(fluvial bool, year int, frequency int, damage float64, ffdam []float64, fpdam []float64, cfdam []float64, cpdam []float64) {
+func assignDamage(fluvial bool, year int, frequency int, damage float64, ffdam []float64, fpdam []float64, cfdam []float64, cpdam []float64, newData bool) {
 	if fluvial {
 		if year == 2020 {
-			cfdam[frequencyIndex(frequency)] = damage
+			cfdam[frequencyIndex(frequency, newData)] = damage
 		} else if year == 2050 {
-			ffdam[frequencyIndex(frequency)] = damage
+			ffdam[frequencyIndex(frequency, newData)] = damage
 		}
 	} else {
 		if year == 2020 {
-			cpdam[frequencyIndex(frequency)] = damage
+			cpdam[frequencyIndex(frequency, newData)] = damage
 		} else if year == 2050 {
-			fpdam[frequencyIndex(frequency)] = damage
+			fpdam[frequencyIndex(frequency, newData)] = damage
 		}
 	}
 

@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/USACE/go-consequences/hazard_providers"
+	"github.com/USACE/go-consequences/hazardproviders"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -30,7 +30,7 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 	if ok {
 		r, found := sds.getRecord(fd_id.Fd_id) //make a query for a row...
 		if fd_id.NewData {
-			return nil, hazard_providers.HazardError{Input: "Sqlite data does not support new data specification."}
+			return nil, hazardproviders.HazardError{Input: "Sqlite data does not support new data specification."}
 		}
 		if found {
 			if fd_id.Fluvial {
@@ -40,7 +40,7 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 					return generateDepthEvent(fd_id.Frequency, r.FutureFluvial, fd_id.NewData)
 				} else {
 					//throw error?
-					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}
+					return nil, hazardproviders.HazardError{Input: "Bad Year Argument"}
 				}
 
 			} else {
@@ -50,14 +50,14 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
 					return generateDepthEvent(fd_id.Frequency, r.FuturePluvial, fd_id.NewData)
 				} else {
 					//throw error?
-					return nil, hazard_providers.HazardError{Input: "Bad Year Argument"}
+					return nil, hazardproviders.HazardError{Input: "Bad Year Argument"}
 				}
 			}
 		} else {
-			return nil, hazard_providers.NoHazardFoundError{Input: fd_id.Fd_id}
+			return nil, hazardproviders.NoHazardFoundError{Input: fd_id.Fd_id}
 		}
 	} else {
-		return nil, hazard_providers.HazardError{Input: "Unable to parse args to hazard_providers.FathomQuery"}
+		return nil, hazardproviders.HazardError{Input: "Unable to parse args to hazard_providers.FathomQuery"}
 	}
 }
 func (sds SQLDataSet) getRecord(fd_id string) (Record, bool) {

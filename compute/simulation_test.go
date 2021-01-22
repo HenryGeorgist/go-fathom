@@ -2,6 +2,7 @@ package compute
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
@@ -42,4 +43,14 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 	ds := hazard_providers.OpenSQLDepthDataSet()
 	fmt.Println("Finished Reading Depths")
 	ComputeMultiFips_MultiEvent(ds)
+}
+
+func TestComputeNewFile(t *testing.T) {
+	ss := "11"
+	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v_feet.csv", ss)
+	ds := ReadFeetFile(path)
+	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_damages_%v.csv", ss)
+	outputFile := os.Open(outputpath)
+	//compute
+	ComputeMultiEvent_NSIStream(ds, ss, outputFile, true)
 }

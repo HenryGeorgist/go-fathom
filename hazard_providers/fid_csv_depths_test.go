@@ -50,3 +50,4 @@ func TestConvertNewFile(t *testing.T) {
 	}
 	wg.Wait()
 }
+
