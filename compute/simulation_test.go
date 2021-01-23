@@ -3,10 +3,12 @@ package compute
 import (
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
 	"github.com/HenryGeorgist/go-fathom/store"
+	"github.com/USACE/go-consequences/census"
 )
 
 func TestSingleEvent(t *testing.T) {
@@ -46,7 +48,10 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 }
 
 func TestComputeNewFile(t *testing.T) {
-	ss := "06"
+	ss := "11"
+	computeState_New(ss)
+}
+func computeState_New(ss string) {
 	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v_feet.csv", ss)
 	ds := hazard_providers.ReadFeetFile(path)
 	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_damages_%v.csv", ss)
@@ -57,4 +62,16 @@ func TestComputeNewFile(t *testing.T) {
 	}
 	//compute
 	ComputeMultiEvent_NSIStream_toFile_withNew(ds, ss, outputFile, true)
+}
+func TestMulti_State_ComputeNewFile(t *testing.T) {
+	fmap := census.StateToCountyFipsMap()
+	var wg sync.WaitGroup
+	wg.Add(len(fmap))
+	for ss, _ := range fmap {
+		go func(state string) {
+			defer wg.Done()
+			computeState_New(state)
+		}(ss)
+	}
+	wg.Wait()
 }
