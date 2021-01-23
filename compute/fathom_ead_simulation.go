@@ -174,7 +174,7 @@ func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) 
 }
 func ComputeMultiEvent_NSIStream_toFile_withNew(ds hp.HazardProvider, fips string, outputFile *os.File, newData bool) bool {
 	fmt.Println("Downloading NSI by fips " + fips)
-	outputFile.WriteString("FD_ID,X,Y,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
+	outputFile.WriteString("FD_ID,X,Y,County,CB,OccType,DamCat,PopDay,PopNight,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
 	years := [2]int{2020, 2050}
 	frequencies := []int{5, 20, 100, 250, 500}
 	freq := []float64{.2, .05, .01, .004, .002}
@@ -238,7 +238,9 @@ func ComputeMultiEvent_NSIStream_toFile_withNew(ds hp.HazardProvider, fips strin
 			ffeadc := comp.ComputeSpecialEAD(ffdamc, freq)
 			fpeadc := comp.ComputeSpecialEAD(fpdamc, freq)
 			//write to output file.
-			outputFile.WriteString(fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f\n", str.Name, str.X, str.Y, cfead+cfeadc, cpead+cpeadc, ffead+ffeadc, fpead+fpeadc))
+			//outputFile.WriteString("FD_ID,X,Y,County,CB,OccType,DamCat,PopDay,PopNight,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
+			county := feature.Properties.CB[0:5] //county is first five characters of the cb.
+			outputFile.WriteString(fmt.Sprintf("%s,%f,%f,%s,%s,%s,%s,%d,%d,%f,%f,%f,%f\n", str.Name, str.X, str.Y, county, feature.Properties.CB, feature.Properties.Occtype, feature.Properties.DamCat, feature.Properties.Pop2amu65+feature.Properties.Pop2amo65, feature.Properties.Pop2pmu65+feature.Properties.Pop2pmo65, cfead+cfeadc, cpead+cpeadc, ffead+ffeadc, fpead+fpeadc))
 		}
 	})
 
