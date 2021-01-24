@@ -48,7 +48,7 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 }
 
 func TestComputeNewFile(t *testing.T) {
-	ss := "11"
+	ss := "48"
 	computeState_New(ss)
 }
 func computeState_New(ss string) {
