@@ -179,7 +179,7 @@ func ConvertFile(file string) DataSet {
 		futurepluvial := FrequencyData{fluvial: false, year: 2050, Values: fpvals}
 		currentfluvial := FrequencyData{fluvial: true, year: 2020, Values: cfvals}
 		currentpluvial := FrequencyData{fluvial: false, year: 2020, Values: cpvals}
-		if hasNonZeroValues(ffvals, fpvals, cfvals, cpvals) {
+		if hasNonZeroValues(ffvals, fpvals, cfvals, cpvals, newData) {
 			r := Record{Fd_id: fd_id, FutureFluvial: futurefluvial, FuturePluvial: futurepluvial, CurrentFluvial: currentfluvial, CurrentPluvial: currentpluvial}
 			m[fd_id] = r
 			count++
@@ -255,7 +255,7 @@ func ReadFeetFile(file string) DataSet {
 		futurepluvial := FrequencyData{fluvial: false, year: 2050, Values: fpvals}
 		currentfluvial := FrequencyData{fluvial: true, year: 2020, Values: cfvals}
 		currentpluvial := FrequencyData{fluvial: false, year: 2020, Values: cpvals}
-		if hasNonZeroValues(ffvals, fpvals, cfvals, cpvals) {
+		if hasNonZeroValues(ffvals, fpvals, cfvals, cpvals, newData) {
 			if hasValidData(fd_id, ffvals, fpvals, cfvals, cpvals, newData) {
 				r := Record{Fd_id: fd_id, FutureFluvial: futurefluvial, FuturePluvial: futurepluvial, CurrentFluvial: currentfluvial, CurrentPluvial: currentpluvial}
 				m[fd_id] = r
@@ -270,8 +270,12 @@ func ReadFeetFile(file string) DataSet {
 	ds := DataSet{Data: m}
 	return ds
 }
-func hasNonZeroValues(ffvals []float64, fpvals []float64, cfvals []float64, cpvals []float64) bool {
-	for i := 0; i < 5; i++ {
+func hasNonZeroValues(ffvals []float64, fpvals []float64, cfvals []float64, cpvals []float64, newData bool) bool {
+	records := 5
+	if newData {
+		records = 6
+	}
+	for i := 0; i < records; i++ {
 		if ffvals[i] > 0 {
 			return true
 		}

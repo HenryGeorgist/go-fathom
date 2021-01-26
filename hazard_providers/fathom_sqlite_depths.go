@@ -97,7 +97,7 @@ func (sds SQLDataSet) getRecord(fd_id string) (Record, bool) {
 		futurepluvial := FrequencyData{fluvial: false, year: 2050, Values: fpvals}
 		currentfluvial := FrequencyData{fluvial: true, year: 2020, Values: cfvals}
 		currentpluvial := FrequencyData{fluvial: false, year: 2020, Values: cpvals}
-		if hasNonZeroValues(ffvals, fpvals, cfvals, cpvals) {
+		if hasNonZeroValues(ffvals, fpvals, cfvals, cpvals, false) {
 			r := Record{Fd_id: fd_id, FutureFluvial: futurefluvial, FuturePluvial: futurepluvial, CurrentFluvial: currentfluvial, CurrentPluvial: currentpluvial}
 			return r, true
 		}
