@@ -26,7 +26,7 @@ func TestJoinAndWriteData(t *testing.T) {
 	wg.Wait()
 }
 func TestJoinAndWriteData_State(t *testing.T) {
-	ss := "50"
+	ss := "17"
 	f, err := os.Create("C:\\Examples\\go-fathom\\states\\" + ss + "_rerun.csv")
 	if err != nil {
 		panic(err)

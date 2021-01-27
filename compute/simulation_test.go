@@ -48,8 +48,17 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 }
 
 func TestComputeNewFile(t *testing.T) {
-	ss := "11"
-	computeState_New(ss)
+	ss := []string{"17"}
+	var wg sync.WaitGroup
+	wg.Add(len(ss))
+	for _, s := range ss {
+		go func(state string) {
+			defer wg.Done()
+			computeState_New(state)
+		}(s)
+	}
+	wg.Wait()
+	//computeState_New(ss)
 }
 func computeState_New(ss string) {
 	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v_feet.csv", ss)
