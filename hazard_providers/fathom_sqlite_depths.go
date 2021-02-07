@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/USACE/go-consequences/hazardproviders"
+	"github.com/USACE/go-consequences/hazards"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -24,7 +25,7 @@ func OpenSQLDepthDataSet() SQLDataSet {
 }
 
 //ProvideHazard fulfils the HazardProvier interface from go-consequences
-func (sds SQLDataSet) ProvideHazard(args interface{}) (interface{}, error) {
+func (sds SQLDataSet) ProvideHazard(args interface{}) (hazards.HazardEvent, error) {
 	fd_id, ok := args.(FathomQuery)
 
 	if ok {

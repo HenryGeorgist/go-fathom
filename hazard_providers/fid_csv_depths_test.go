@@ -42,8 +42,8 @@ func TestConvertNewFile(t *testing.T) {
 		go func(ss string) {
 			defer wg.Done()
 			fmt.Println("Computing " + ss)
-			inpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v.csv", ss)
-			outpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v_feet.csv", ss)
+			inpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Pluvial\\NSI_Fathom_depths%v.csv", ss)
+			outpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Pluvial\\NSI_Fathom_depths%v_feet.csv", ss)
 			WriteBackToDisk(ConvertFile(inpath), outpath, true)
 			fmt.Println(ss + " Complete")
 		}(ss)

@@ -48,7 +48,7 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 }
 
 func TestComputeNewFile(t *testing.T) {
-	ss := []string{"17"}
+	ss := []string{"51"}
 	var wg sync.WaitGroup
 	wg.Add(len(ss))
 	for _, s := range ss {
@@ -61,9 +61,9 @@ func TestComputeNewFile(t *testing.T) {
 	//computeState_New(ss)
 }
 func computeState_New(ss string) {
-	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_depths%v_feet.csv", ss)
+	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Pluvial\\NSI_Fathom_depths%v_feet.csv", ss)
 	ds := hazard_providers.ReadFeetFile(path)
-	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths\\NSI_Fathom_damages_%v.csv", ss)
+	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Pluvial\\NSI_Fathom_damages_%v.csv", ss)
 	outputFile, error := os.Create(outputpath)
 	defer outputFile.Close()
 	if error != nil {
@@ -74,13 +74,30 @@ func computeState_New(ss string) {
 }
 func TestMulti_State_ComputeNewFile(t *testing.T) {
 	fmap := census.StateToCountyFipsMap()
-	var wg sync.WaitGroup
-	wg.Add(len(fmap))
+	states := make([]string, len(fmap))
+	//var wg sync.WaitGroup
+	//wg.Add(len(fmap))
+	i := 0
+	max := 7
+	stateCounter := 0
 	for ss, _ := range fmap {
-		go func(state string) {
-			defer wg.Done()
-			computeState_New(state)
-		}(ss)
+		states[stateCounter] = ss
+		stateCounter++
 	}
-	wg.Wait()
+	for i < len(states) {
+		var limiter sync.WaitGroup
+		//limiter.Add(max) // maybe?
+		for j := 0; j < max; j++ {
+			if j == 0 {
+				limiter.Add(max)
+			}
+			go func(state string) {
+				defer limiter.Done()
+				computeState_New(state)
+			}(states[i])
+			i++
+		}
+		limiter.Wait()
+	}
+	//wg.Wait()
 }

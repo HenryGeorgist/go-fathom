@@ -41,7 +41,7 @@ type FathomQuery struct {
 	NewData bool
 }
 
-func (ds DataSet) ProvideHazard(args interface{}) (interface{}, error) {
+func (ds DataSet) ProvideHazard(args interface{}) (hazards.HazardEvent, error) {
 	fd_id, ok := args.(FathomQuery)
 	if ok {
 		r, found := ds.Data[fd_id.Fd_id]

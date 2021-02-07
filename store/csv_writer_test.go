@@ -4,24 +4,28 @@ import (
 	"os"
 	"sync"
 	"testing"
-
-	"github.com/USACE/go-consequences/census"
 )
 
 func TestJoinAndWriteData(t *testing.T) {
 	//get a fips map
-	fmap := census.StateToCountyFipsMap()
+	//fmap := census.StateToCountyFipsMap()
+	//var wg sync.WaitGroup
+	//wg.Add(len(fmap))
+	//for ss := range fmap {
+	ss := []string{"12", "48", "06"}
 	var wg sync.WaitGroup
-	wg.Add(len(fmap))
-	for ss := range fmap {
-		defer wg.Done()
-		f, err := os.Create("C:\\Examples\\go-fathom\\states\\" + ss + ".csv")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		go ProcessByState(ss, f)
-		f.Sync()
+	wg.Add(len(ss))
+	for _, s := range ss {
+		go func(state string) {
+			defer wg.Done()
+			f, err := os.Create("C:\\Examples\\go-fathom\\states\\" + state + "_Attributes.csv")
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			ProcessByStateMoreAttributes(state, f)
+			f.Sync()
+		}(s)
 	}
 	wg.Wait()
 }
