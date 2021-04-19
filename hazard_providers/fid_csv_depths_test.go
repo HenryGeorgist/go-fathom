@@ -31,7 +31,7 @@ func TestReadSqliteEvent(t *testing.T) {
 	fq := FathomQuery{Location: geography.Location{X: -92.632957458, Y: 40.208374023, SRID: "47715104"}, FathomEvent: fe}
 	h, _ := db.ProvideHazard(fq)
 	depthevent, _ := h.(hazards.DepthEvent)
-	fmt.Println(depthevent.DepthValue)
+	fmt.Println(depthevent.Depth())
 }
 
 // func TestWrite(t *testing.T) {

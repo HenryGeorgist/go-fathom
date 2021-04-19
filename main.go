@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	x := hp.OpenSQLDepthDataSet("./data/fathom-depths.db")
+	x := hp.OpenSQLDepthDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
 	compute.ComputeMultiFips_MultiEvent(x)
 }

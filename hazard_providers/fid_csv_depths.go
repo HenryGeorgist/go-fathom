@@ -77,34 +77,56 @@ func generateDepthEvent(frequency int, data FrequencyData, newData bool) (hazard
 	switch frequency {
 	case 2:
 		if newData {
-			return hazards.DepthEvent{DepthValue: data.Values[0]}, nil
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[0])
+			return DepthEvent, nil
 		}
 		return hazards.DepthEvent{}, hazardproviders.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
 	case 5:
 		if newData {
-			return hazards.DepthEvent{DepthValue: data.Values[1]}, nil
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[1])
+			return DepthEvent, nil
 		}
-		return hazards.DepthEvent{DepthValue: data.Values[0]}, nil
+		var DepthEvent hazards.DepthEvent
+		DepthEvent.SetDepth(data.Values[0])
+		return DepthEvent, nil
 	case 20:
 		if newData {
-			return hazards.DepthEvent{DepthValue: data.Values[2]}, nil
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[2])
+			return DepthEvent, nil
 		}
-		return hazards.DepthEvent{DepthValue: data.Values[1]}, nil
+		var DepthEvent hazards.DepthEvent
+		DepthEvent.SetDepth(data.Values[1])
+		return DepthEvent, nil
 	case 100:
 		if newData {
-			return hazards.DepthEvent{DepthValue: data.Values[3]}, nil
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[3])
+			return DepthEvent, nil
 		}
-		return hazards.DepthEvent{DepthValue: data.Values[2]}, nil
+		var DepthEvent hazards.DepthEvent
+		DepthEvent.SetDepth(data.Values[2])
+		return DepthEvent, nil
 	case 250:
 		if newData {
-			return hazards.DepthEvent{DepthValue: data.Values[4]}, nil
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[4])
+			return DepthEvent, nil
 		}
-		return hazards.DepthEvent{DepthValue: data.Values[3]}, nil
+		var DepthEvent hazards.DepthEvent
+		DepthEvent.SetDepth(data.Values[3])
+		return DepthEvent, nil
 	case 500:
 		if newData {
-			return hazards.DepthEvent{DepthValue: data.Values[5]}, nil
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[5])
+			return DepthEvent, nil
 		}
-		return hazards.DepthEvent{DepthValue: data.Values[4]}, nil
+		var DepthEvent hazards.DepthEvent
+		DepthEvent.SetDepth(data.Values[4])
+		return DepthEvent, nil
 	default:
 		return hazards.DepthEvent{}, hazardproviders.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
 	}

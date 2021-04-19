@@ -72,7 +72,7 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 						result, _ := ds.ProvideHazard(fq)
 						depthevent, okd := result.(hazards.DepthEvent)
 						if okd {
-							if depthevent.DepthValue <= 0 {
+							if depthevent.Depth() <= 0 {
 								//skip
 								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam, false)
 								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc, false)
