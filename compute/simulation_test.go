@@ -1,11 +1,15 @@
 package compute
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
 	"github.com/HenryGeorgist/go-fathom/store"
+	"github.com/USACE/go-consequences/consequences"
+	"github.com/USACE/go-consequences/hazards"
+	sp "github.com/USACE/go-consequences/structureprovider"
 )
 
 // func TestSingleEvent(t *testing.T) {
@@ -35,13 +39,33 @@ func TestSQLMultiEvent_SingleState(t *testing.T) {
 	fmt.Println("Finished Reading Depths")
 	db := store.CreateDatabase()
 	defer db.Close()
-	ComputeMultiEvent_NSIStream(ds, "29", db)
+	ComputeMultiEvent_NSIStream(ds, "29005", db)
 }
 func TestSQL_MultiEvent_MultiState(t *testing.T) {
 	fmt.Println("Reading Depths")
 	ds := hazard_providers.OpenSQLDepthDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
 	fmt.Println("Finished Reading Depths")
 	ComputeMultiFips_MultiEvent(ds)
+}
+
+func TestGPKByFips(t *testing.T) {
+	filepath := "/workspaces/go-fathom/data/nsiv2_29.gpkg"
+	nsp := sp.InitGPK(filepath, "nsi")
+	// take only the first 2000 structures to ensure it works in 30 seconds
+	fmt.Println(nsp.FilePath)
+	d := hazards.DepthEvent{}
+	d.SetDepth(2.4)
+	count := 0
+	nsp.ByFips("29005", func(s consequences.Receptor) {
+		r := s.Compute(d)
+		b, _ := json.Marshal(r)
+		fmt.Println(string(b))
+		count++
+		if count == 2000 {
+			fmt.Println("2000 structures done")
+		}
+	})
+	fmt.Println(count)
 }
 
 // func TestComputeNewFile(t *testing.T) {

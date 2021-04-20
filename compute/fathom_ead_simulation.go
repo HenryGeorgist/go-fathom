@@ -40,6 +40,8 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 	//transaction := make([]interface{}, maxTransaction)
 	nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
 
+	processIndex := 0
+
 	nsp.ByFips(fips, func(s consequences.Receptor) {
 		// m := structures.OccupancyTypeMap()
 		// defaultOcctype := m["RES1-1SNB"]
@@ -49,6 +51,14 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 		loc := geography.Location{X: s.Location().X, Y: s.Location().Y, SRID: s.Location().SRID}
 		fq := hazard_providers.FathomQuery{Location: loc, FathomEvent: fe}
 		_, err := ds.ProvideHazard(fq)
+
+		// figure out how to get total number of records for my print statement below
+
+		processIndex++
+		if processIndex%1000 == 0 {
+			fmt.Printf("Successfully processed %v structures", processIndex)
+			fmt.Println()
+		}
 		if err == nil {
 			//structure presumably exists?
 			cfdam := make([]float64, 5) //for new data this needs to be 6//
