@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	// run main file
 	db := store.CreateWALDatabase()
 	defer db.Close()
 	ds := hp.OpenSQLDepthDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
