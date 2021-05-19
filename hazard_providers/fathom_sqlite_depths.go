@@ -18,8 +18,8 @@ type SQLDataSet struct {
 	db *sql.DB
 }
 
-//OpenSQLDepthDataSet opens a sqldataset
-func OpenSQLDepthDataSet(depthFilePath string) SQLDataSet {
+//MergeSQLDepthNSIDataSet merges the NSI and the Depth dataset
+func MergeSQLDepthNSIDataSet(nsiFilePath string) SQLDataSet {
 	// have to change working directory one level
 	// os.Chdir("..")
 	// path, err := os.Getwd()
@@ -27,7 +27,66 @@ func OpenSQLDepthDataSet(depthFilePath string) SQLDataSet {
 
 	// open both databases
 	//dbNsi, _ := sql.Open("sqlite3", nsiFilePath)
-	dbDepth, _ := sql.Open("sqlite3", depthFilePath)
+	//start := time.Now()
+	dbDepth, _ := sql.Open("sqlite3", nsiFilePath)
+	dbDepth.SetMaxOpenConns(1)
+	s := "ATTACH DATABASE '/workspaces/go-fathom/data/fathom-depths.db' as depths;"
+	statement, err := dbDepth.Prepare(s)
+	statement.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//elapsed := time.Since(start)
+	//fmt.Printf("The attaching of NSI and depth data took %s", elapsed)
+	//fmt.Println()
+
+	//defer statement.Close()
+	// create a dataset to query
+	//start = time.Now()
+	s = "DROP TABLE IF EXISTS query_table;"
+	statement, err = dbDepth.Prepare(s)
+	statement.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//elapsed = time.Since(start)
+	//fmt.Printf("The dropping of the existing query table took %s", elapsed)
+	//fmt.Println()
+
+	// create a dataset to query
+	//start = time.Now()
+	s = "CREATE TABLE query_table AS SELECT a.fd_id, b.x, b.y, a.fluv_2020_5yr, a.pluv_2020_5yr, a.fluv_2020_20yr, a.pluv_2020_20yr, a.fluv_2020_100yr, a.pluv_2020_100yr, a.fluv_2020_250yr, a.pluv_2020_250yr, a.fluv_2020_500yr, a.pluv_2020_500yr, a.fluv_2050_5yr, a.pluv_2050_5yr, a.fluv_2050_20yr, a.pluv_2050_20yr, a.fluv_2050_100yr, a.pluv_2050_100yr, a.fluv_2050_250yr, a.pluv_2050_250yr, a.fluv_2050_500yr, a.pluv_2050_500yr FROM depths.fathom_depths as a, nsi as b WHERE a.fd_id=b.fd_id;"
+	statement, err = dbDepth.Prepare(s)
+	statement.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//elapsed = time.Since(start)
+	//fmt.Printf("The creation of the new query table took %s", elapsed)
+	//fmt.Println()
+
+	//start = time.Now()
+	s = "CREATE INDEX MAKE_ME_FASTER ON query_table(x, y);"
+	statement, err = dbDepth.Prepare(s)
+	statement.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//elapsed = time.Since(start)
+	//fmt.Printf("The creation of the index took %s", elapsed)
+	//fmt.Println()
+
+	//start = time.Now()
+	s = "DETACH DATABASE depths ;"
+	statement, err = dbDepth.Prepare(s)
+	statement.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//elapsed = time.Since(start)
+	//fmt.Printf("The detachment of the depths database took %s", elapsed)
+	//fmt.Println()
+
 	// _, err = dbDepth.Exec("attach database '" + nsiFilePath + "'as nsi;")
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -38,6 +97,7 @@ func OpenSQLDepthDataSet(depthFilePath string) SQLDataSet {
 	// }
 
 	//sds.db.Query("SELECT a.*, b.fd_id, b.x, b.y FROM fathom_depths as a LEFT JOIN ")
+	fmt.Println("Finished joining NSI and Depths databases")
 	return SQLDataSet{db: dbDepth}
 }
 
@@ -85,27 +145,20 @@ func (sds SQLDataSet) ProvideHazard(args interface{}) (hazards.HazardEvent, erro
 	}
 }
 
-var depthFilePath = "/workspaces/go-fathom/data/fathom-depths.db"
-var nsiFilePath = "/workspaces/go-fathom/data/nsiv2_29.gpkg"
-
 func (sds SQLDataSet) getRecord(loc geography.Location) (Record, bool) {
-	//db2, _ := sql.Open("sqlite3", nsiFilePath)
-	s := "ATTACH DATABASE '/workspaces/go-fathom/data/fathom-depths.db' as depths;"
-	statement, err := sds.db.Prepare(s)
-	statement.Exec()
 
-	if err != nil {
-		log.Fatal(err)
-	}
 	//query := "SELECT a.fd_id, b.x, b.y, a.fluv_2020_5yr, a.pluv_2020_5yr, a.fluv_2020_20yr, a.pluv_2020_20yr, a.fluv_2020_100yr, a.pluv_2020_100yr, a.fluv_2020_250yr, a.pluv_2020_250yr, a.fluv_2020_500yr, a.pluv_2020_500yr, a.fluv_2050_5yr, a.pluv_2050_5yr, a.fluv_2050_20yr, a.pluv_2050_20yr, a.fluv_2050_100yr, a.pluv_2050_100yr, a.fluv_2050_250yr, a.pluv_2050_250yr, a.fluv_2050_500yr, a.pluv_2050_500yr FROM depths.fathom_depths as a LEFT JOIN nsi as b ON a.fd_id=b.fd_id WHERE x ='" + loc.X + "'and y ='" + loc.Y + "';"
-	row, err := sds.db.Query(fmt.Sprint("SELECT a.fd_id, b.x, b.y, a.fluv_2020_5yr, a.pluv_2020_5yr, a.fluv_2020_20yr, a.pluv_2020_20yr, a.fluv_2020_100yr, a.pluv_2020_100yr, a.fluv_2020_250yr, a.pluv_2020_250yr, a.fluv_2020_500yr, a.pluv_2020_500yr, a.fluv_2050_5yr, a.pluv_2050_5yr, a.fluv_2050_20yr, a.pluv_2050_20yr, a.fluv_2050_100yr, a.pluv_2050_100yr, a.fluv_2050_250yr, a.pluv_2050_250yr, a.fluv_2050_500yr, a.pluv_2050_500yr FROM depths.fathom_depths as a LEFT JOIN nsi as b ON a.fd_id=b.fd_id WHERE x=", loc.X, " and y=", loc.Y, ";"))
+	//start := time.Now()
+	row, err := sds.db.Query(fmt.Sprint("SELECT fd_id, x, y, fluv_2020_5yr, pluv_2020_5yr, fluv_2020_20yr, pluv_2020_20yr, fluv_2020_100yr, pluv_2020_100yr, fluv_2020_250yr, pluv_2020_250yr, fluv_2020_500yr, pluv_2020_500yr, fluv_2050_5yr, pluv_2050_5yr, fluv_2050_20yr, pluv_2050_20yr, fluv_2050_100yr, pluv_2050_100yr, fluv_2050_250yr, pluv_2050_250yr, fluv_2050_500yr, pluv_2050_500yr FROM query_table WHERE x=", loc.X, " and y=", loc.Y, ";"))
+	//elapsed := time.Since(start)
+	//fmt.Printf("The query itself data took %s", elapsed)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer row.Close()
 	for row.Next() { // Iterate and fetch the records from result cursor
-		var fid string
+		var fd_id string
 		var x float64
 		var y float64
 		var fluv_2020_5yr float64
@@ -128,8 +181,8 @@ func (sds SQLDataSet) getRecord(loc geography.Location) (Record, bool) {
 		var pluv_2050_250yr float64
 		var fluv_2050_500yr float64
 		var pluv_2050_500yr float64
-		row.Scan(&fid, &x, &y, &fluv_2020_5yr, &pluv_2020_5yr, &fluv_2020_20yr, &pluv_2020_20yr, &fluv_2020_100yr, &pluv_2020_100yr, &fluv_2020_250yr, &pluv_2020_250yr, &fluv_2020_500yr, &pluv_2020_500yr, &fluv_2050_5yr, &pluv_2050_5yr, &fluv_2050_20yr, &pluv_2050_20yr, &fluv_2050_100yr, &pluv_2050_100yr, &fluv_2050_250yr, &pluv_2050_250yr, &fluv_2050_500yr, &pluv_2050_500yr)
-		location := geography.Location{X: x, Y: y, SRID: fid}
+		row.Scan(&fd_id, &x, &y, &fluv_2020_5yr, &pluv_2020_5yr, &fluv_2020_20yr, &pluv_2020_20yr, &fluv_2020_100yr, &pluv_2020_100yr, &fluv_2020_250yr, &pluv_2020_250yr, &fluv_2020_500yr, &pluv_2020_500yr, &fluv_2050_5yr, &pluv_2050_5yr, &fluv_2050_20yr, &pluv_2050_20yr, &fluv_2050_100yr, &pluv_2050_100yr, &fluv_2050_250yr, &pluv_2050_250yr, &fluv_2050_500yr, &pluv_2050_500yr)
+		location := geography.Location{X: x, Y: y, SRID: fd_id}
 		cfvals := []float64{fluv_2020_5yr, fluv_2020_20yr, fluv_2020_100yr, fluv_2020_250yr, fluv_2020_500yr}
 		cpvals := []float64{pluv_2020_5yr, pluv_2020_20yr, pluv_2020_100yr, pluv_2020_250yr, pluv_2020_500yr}
 		ffvals := []float64{fluv_2050_5yr, fluv_2050_20yr, fluv_2050_100yr, fluv_2050_250yr, fluv_2050_500yr}

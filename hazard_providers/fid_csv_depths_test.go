@@ -26,7 +26,7 @@ import (
 // 	ReadFeetFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Filtered_Feet.csv").WriteToSqlite()
 // }
 func TestReadSqliteEvent(t *testing.T) {
-	db := OpenSQLDepthDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
+	db := MergeSQLDepthNSIDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
 	fe := FathomEvent{Year: 2050, Frequency: 500, Fluvial: true}
 	fq := FathomQuery{Location: geography.Location{X: -92.632957458, Y: 40.208374023, SRID: "47715104"}, FathomEvent: fe}
 	h, _ := db.ProvideHazard(fq)

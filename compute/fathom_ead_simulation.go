@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
 	"github.com/HenryGeorgist/go-fathom/store"
@@ -41,7 +42,7 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 	nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
 
 	processIndex := 0
-
+	start := time.Now()
 	nsp.ByFips(fips, func(s consequences.Receptor) {
 		// m := structures.OccupancyTypeMap()
 		// defaultOcctype := m["RES1-1SNB"]
@@ -53,12 +54,13 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 		_, err := ds.ProvideHazard(fq)
 
 		// figure out how to get total number of records for my print statement below
-
-		processIndex++
-		if processIndex%1000 == 0 {
+		if processIndex%100000 == 0 {
+			elapsed := time.Since(start)
 			fmt.Printf("Successfully processed %v structures", processIndex)
+			fmt.Printf(" in %s", elapsed)
 			fmt.Println()
 		}
+		processIndex++
 		if err == nil {
 			//structure presumably exists?
 			cfdam := make([]float64, 5) //for new data this needs to be 6//
@@ -69,6 +71,7 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 			cpdamc := make([]float64, 5)
 			ffdamc := make([]float64, 5)
 			fpdamc := make([]float64, 5)
+
 			for _, flu := range fluvial {
 				//hazard := "pluvial"
 				//if flu {
@@ -106,7 +109,6 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 
 				}
 			}
-
 			//compute ead's for each of the 4 caases for structure and content.
 			freq := []float64{.2, .05, .01, .004, .002} //5,20,100,250,500
 			//freq:= []float64{.5,.2,.05,.01,004,.002}//for newData

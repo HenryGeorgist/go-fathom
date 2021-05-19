@@ -35,7 +35,7 @@ import (
 // }
 func TestSQLMultiEvent_SingleState(t *testing.T) {
 	fmt.Println("Reading Depths")
-	ds := hazard_providers.OpenSQLDepthDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
+	ds := hazard_providers.MergeSQLDepthNSIDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
 	fmt.Println("Finished Reading Depths")
 	db := store.CreateDatabase()
 	defer db.Close()
@@ -43,7 +43,7 @@ func TestSQLMultiEvent_SingleState(t *testing.T) {
 }
 func TestSQL_MultiEvent_MultiState(t *testing.T) {
 	fmt.Println("Reading Depths")
-	ds := hazard_providers.OpenSQLDepthDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
+	ds := hazard_providers.MergeSQLDepthNSIDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
 	fmt.Println("Finished Reading Depths")
 	ComputeMultiFips_MultiEvent(ds)
 }
