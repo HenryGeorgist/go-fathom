@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	// run main file
 	db := store.CreateWALDatabase()
 	defer db.Close()
 	start := time.Now()
