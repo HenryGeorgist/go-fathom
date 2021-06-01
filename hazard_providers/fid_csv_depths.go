@@ -74,6 +74,84 @@ type FathomQuery struct {
 // 	}
 // }
 func generateDepthEvent(frequency int, data FrequencyData, newData bool) (hazards.DepthEvent, error) {
+	switch {
+	case frequency <= 2:
+		if newData {
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[0])
+			return DepthEvent, nil
+		}
+		var DepthEvent hazards.DepthEvent
+		// assume 0 freq = 0 depth is the first point
+		slope := data.Values[0] / 5
+		DepthEvent.SetDepth(slope * float64(frequency))
+		return DepthEvent, nil
+	case frequency <= 5:
+		if newData {
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[1])
+			return DepthEvent, nil
+		}
+		var DepthEvent hazards.DepthEvent
+		slope := data.Values[0] / 5
+		DepthEvent.SetDepth(slope * float64(frequency))
+		return DepthEvent, nil
+	case frequency <= 20:
+		if newData {
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[2])
+			return DepthEvent, nil
+		}
+		var DepthEvent hazards.DepthEvent
+		slope := (data.Values[1] - data.Values[0]) / (20 - 5)
+		intercept := data.Values[1] - (slope * 20)
+		DepthEvent.SetDepth(slope*float64(frequency) + intercept)
+		return DepthEvent, nil
+	case frequency <= 100:
+		if newData {
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[3])
+			return DepthEvent, nil
+		}
+		var DepthEvent hazards.DepthEvent
+		slope := (data.Values[2] - data.Values[1]) / (100 - 20)
+		intercept := data.Values[2] - (slope * 100)
+		DepthEvent.SetDepth(slope*float64(frequency) + intercept)
+		return DepthEvent, nil
+	case frequency <= 250:
+		if newData {
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[4])
+			return DepthEvent, nil
+		}
+		var DepthEvent hazards.DepthEvent
+		slope := (data.Values[3] - data.Values[2]) / (250 - 100)
+		intercept := data.Values[3] - (slope * 250)
+		DepthEvent.SetDepth(slope*float64(frequency) + intercept)
+		return DepthEvent, nil
+	case frequency <= 500:
+		if newData {
+			var DepthEvent hazards.DepthEvent
+			DepthEvent.SetDepth(data.Values[5])
+			return DepthEvent, nil
+		}
+		var DepthEvent hazards.DepthEvent
+		slope := (data.Values[4] - data.Values[3]) / (500 - 250)
+		intercept := data.Values[4] - (slope * 500)
+		DepthEvent.SetDepth(slope*float64(frequency) + intercept)
+		return DepthEvent, nil
+	case frequency > 500:
+		var DepthEvent hazards.DepthEvent
+		slope := (data.Values[4] - data.Values[3]) / (500 - 250)
+		intercept := data.Values[4] - (slope * 500)
+		DepthEvent.SetDepth(slope*float64(frequency) + intercept)
+		return DepthEvent, nil
+	default:
+		return hazards.DepthEvent{}, hazardproviders.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
+	}
+}
+
+func generateDepthEventOld(frequency int, data FrequencyData, newData bool) (hazards.DepthEvent, error) {
 	switch frequency {
 	case 2:
 		if newData {

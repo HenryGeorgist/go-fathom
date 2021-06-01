@@ -3,6 +3,7 @@ package compute
 import (
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -40,6 +41,8 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 	maxTransaction := 1000
 	//transaction := make([]interface{}, maxTransaction)
 	nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+	//l := nsp.*ds.LayerByName(gpk.LayerName)
+	//fc, _ := l.FeatureCount(true)
 
 	processIndex := 0
 	start := time.Now()
@@ -313,46 +316,156 @@ func assignDamage(fluvial bool, year int, frequency int, damage float64, ffdam [
 
 }
 
-// func ComputeSingleEvent_NSIStream(ds hazard_providers.DataSet, fips string, fe hazard_providers.FathomEvent) {
-// 	rmap := make(map[string]comp.SimulationSummaryRow)
-// 	fmt.Println("Downloading NSI by fips " + fips)
-// 	nsi.GetByFipsStream(fips, func(feature nsi.NsiFeature) {
-// 		m := structures.OccupancyTypeMap()
-// 		defaultOcctype := m["RES1-1SNB"]
-// 		str := comp.NsiFeaturetoStructure(feature, m, defaultOcctype)
-// 		fq := hazard_providers.FathomQuery{Fd_id: str.Name, FathomEvent: fe}
-// 		result, err := ds.ProvideHazard(fq)
-// 		if err == nil {
-// 			//structure presumably exists?
-// 			depthevent, okd := result.(hazards.DepthEvent)
-// 			if okd {
-// 				if depthevent.Depth <= 0 {
-// 					//skip
-// 				} else {
-// 					r := str.Compute(depthevent)
-// 					if val, ok := rmap[str.DamCat]; ok {
-// 						val.StructureCount += 1
-// 						val.StructureDamage += r.Result.Result[0].(float64) //based on convention - super risky
-// 						val.ContentDamage += r.Result.Result[1].(float64)   //based on convention - super risky
-// 						rmap[str.DamCat] = val
-// 					} else {
-// 						rmap[str.DamCat] = comp.SimulationSummaryRow{RowHeader: str.DamCat, StructureCount: 1, StructureDamage: r.Result.Result[0].(float64), ContentDamage: r.Result.Result[1].(float64)}
-// 					}
-// 				}
-// 			}
+func ComputeSingleEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, fe hazard_providers.FathomEvent) map[string]consequences.Result {
+	rmap := make(map[string]consequences.Result)
+	fmt.Println("Downloading NSI by fips " + fips)
 
-// 		}
+	nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
 
-// 	})
-// 	rows := make([]comp.SimulationSummaryRow, len(rmap))
-// 	idx := 0
-// 	//s := "COMPLETE FOR SIMULATION" + "\n"
-// 	for _, val := range rmap {
-// 		fmt.Println(fmt.Sprintf("for %s, there were %d structures with %f structure damages %f content damages for damage category %s", fips, val.StructureCount, val.StructureDamage, val.ContentDamage, val.RowHeader))
-// 		//s += fmt.Sprintf("for %s, there were %d structures with %f structure damages %f content damages for damage category %s", fips, val.StructureCount, val.StructureDamage, val.ContentDamage, val.RowHeader) + "\n"
-// 		rows[idx] = val
-// 		idx++
-// 	}
+	processIndex := 0
+	start := time.Now()
+	nsp.ByFips(fips, func(s consequences.Receptor) {
+		//m := structures.OccupancyTypeMap()
+		//defaultOcctype := m["RES1-1SNB"]
+		//str := comp.NsiFeaturetoStructure(feature, m, defaultOcctype)
+		//fq := hazard_providers.FathomQuery{Fd_id: str.Name, FathomEvent: fe}
+		//result, err := ds.ProvideHazard(fq)
+		loc := geography.Location{X: s.Location().X, Y: s.Location().Y, SRID: s.Location().SRID}
+		fq := hazard_providers.FathomQuery{Location: loc, FathomEvent: fe}
+		result, err := ds.ProvideHazard(fq)
 
-// 	fmt.Println("Complete for" + fips)
-// }
+		// figure out how to get total number of records for my print statement below
+		if processIndex%1000 == 0 {
+			elapsed := time.Since(start)
+			fmt.Printf("Successfully processed %v structures", processIndex)
+			fmt.Printf(" in %s", elapsed)
+			fmt.Println()
+		}
+		processIndex++
+		//var results consequences.Results
+		if err == nil {
+			//structure presumably exists?
+			depthevent, okd := result.(hazards.DepthEvent)
+			if okd {
+				if depthevent.Depth() <= 0 {
+					//skip
+				} else {
+					r := s.Compute(depthevent)
+					//StructureDamage := r.Result[6].(float64) //based on convention - super risky
+					//ContentDamage := r.Result[7].(float64)   //based on convention - super risky
+					//if val, ok := rmap[r.Headers[0]]; ok {
+					//val.StructureCount += 1
+					//val.StructureDamage += r.Result.Result[0].(float64) //based on convention - super risky
+					//val.ContentDamage += r.Result.Result[1].(float64)   //based on convention - super risky
+					//rmap[str.DamCat] = val
+					//} else {
+					//rmap[str.DamCat] = comp.SimulationSummaryRow{RowHeader: str.DamCat, StructureCount: 1, StructureDamage: r.Result.Result[0].(float64), ContentDamage: r.Result.Result[1].(float64)}
+					//}
+					//results.AddResult(r)
+					rmap[r.Result[0].(string)] = r
+				}
+			}
+
+		}
+
+	})
+	rows := make([]consequences.Result, len(rmap))
+	idx := 0
+	//s := "COMPLETE FOR SIMULATION" + "\n"
+	for _, val := range rmap {
+		fmt.Println(fmt.Sprintf("for %s, there were structures with %f structure damages %f content damages for location %s", fips, val.Result[6], val.Result[7], val.Result[1]))
+		//s += fmt.Sprintf("for %s, there were %d structures with %f structure damages %f content damages for damage category %s", fips, val.StructureCount, val.StructureDamage, val.ContentDamage, val.RowHeader) + "\n"
+		rows[idx] = val
+		idx++
+	}
+
+	fmt.Println("Complete for" + fips)
+	return rmap
+}
+
+type damages struct {
+	structdamage float64
+	contdamage   float64
+}
+
+func ComputeSingleEvent_NSIStreamMonteCarlo(ds hazard_providers.SQLDataSet, fips string, simulations int) map[string][]damages {
+	rmap := make(map[string][]damages)
+	fmt.Println("Downloading NSI by fips " + fips)
+	for simnumber := 0; simnumber < simulations; simnumber++ {
+		// set the seed
+		rand.Seed(time.Now().UnixNano())
+		// initialize the NSI
+		nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+
+		fmt.Printf("Simulation Number %v", simnumber)
+		fmt.Println()
+
+		// random Fathom Event
+		randomnumber := rand.Float64()
+		freq := 1 / randomnumber
+		fmt.Println("Frequency: ", int(freq))
+		// Start time
+		start := time.Now()
+		nsp.ByFips(fips, func(s consequences.Receptor) {
+
+			fe := hazard_providers.FathomEvent{Year: 2050, Frequency: int(freq), Fluvial: true}
+			loc := geography.Location{X: s.Location().X, Y: s.Location().Y, SRID: s.Location().SRID}
+			fq := hazard_providers.FathomQuery{Location: loc, FathomEvent: fe}
+			result, err := ds.ProvideHazard(fq)
+			//var results consequences.Results
+			if err == nil {
+				//structure presumably exists?
+				depthevent, okd := result.(hazards.DepthEvent)
+				if okd {
+					if depthevent.Depth() <= 0 {
+						//skip
+					} else {
+						r := s.Compute(depthevent)
+						//StructureDamage := r.Result[6].(float64) //based on convention - super risky
+						//ContentDamage := r.Result[7].(float64)   //based on convention - super risky
+						//if val, ok := rmap[r.Headers[0]]; ok {
+						//val.StructureCount += 1
+						//val.StructureDamage += r.Result.Result[0].(float64) //based on convention - super risky
+						//val.ContentDamage += r.Result.Result[1].(float64)   //based on convention - super risky
+						//rmap[str.DamCat] = val
+						//} else {
+						//rmap[str.DamCat] = comp.SimulationSummaryRow{RowHeader: str.DamCat, StructureCount: 1, StructureDamage: r.Result.Result[0].(float64), ContentDamage: r.Result.Result[1].(float64)}
+						//}
+						//results.AddResult(r)
+
+						// create the damages structure
+						//damages1 := make(damages)
+						damages1 := damages{r.Result[6].(float64), r.Result[7].(float64)}
+
+						if simnumber == 0 {
+							damagesarray := make([]damages, 1, simulations)
+							damagesarray[0] = damages1
+							rmap[r.Result[0].(string)] = damagesarray
+						} else {
+							rmap[r.Result[0].(string)] = append(rmap[r.Result[0].(string)], damages1)
+							//rmap[r.Result[0].(string)].Result[6] = rmap[r.Result[0].(string)].Result[6].(float64) + r.Result[6].(float64)
+							//rmap[r.Result[0].(string)].Result[7] = rmap[r.Result[0].(string)].Result[7].(float64) + r.Result[7].(float64)
+						}
+					}
+				}
+
+			}
+
+		})
+		elapsed := time.Since(start)
+		fmt.Printf("Simulation took %s", elapsed)
+		fmt.Println()
+	}
+	//rows := make([]consequences.Result, len(rmap))
+	//idx := 0
+	//s := "COMPLETE FOR SIMULATION" + "\n"
+	// for _, val := range rmap {
+	// 	fmt.Println(fmt.Sprintf("for %s, there were structures with %f structure damages %f content damages for location %s", fips, val.Result[6], val.Result[7], val.Result[1]))
+	// 	//s += fmt.Sprintf("for %s, there were %d structures with %f structure damages %f content damages for damage category %s", fips, val.StructureCount, val.StructureDamage, val.ContentDamage, val.RowHeader) + "\n"
+	// 	rows[idx] = val
+	// 	idx++
+	// }
+
+	fmt.Println("Complete for " + fips)
+	return rmap
+}

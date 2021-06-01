@@ -68,6 +68,14 @@ func TestGPKByFips(t *testing.T) {
 	fmt.Println(count)
 }
 
+func TestSingleEvent(t *testing.T) {
+	fmt.Println("Reading Depths")
+	ds := hazard_providers.MergeSQLDepthNSIDataSet("/workspaces/go-fathom/data/nsiv2_29.gpkg")
+	fmt.Println("Finished Reading Depths")
+	fe := hazard_providers.FathomEvent{Year: 2050, Frequency: 5, Fluvial: true}
+	ComputeSingleEvent_NSIStream(ds, "29005", fe)
+}
+
 // func TestComputeNewFile(t *testing.T) {
 // 	ss := []string{"51"}
 // 	var wg sync.WaitGroup

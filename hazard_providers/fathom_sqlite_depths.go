@@ -104,6 +104,9 @@ func MergeSQLDepthNSIDataSet(nsiFilePath string) SQLDataSet {
 //ProvideHazardBoundary fulfils the HazardProvider interface from go-consequences
 func (sds SQLDataSet) ProvideHazardBoundary() (geography.BBox, error) {
 	fmt.Println("not set up for BBox yet")
+	//bbox := make([]float64, 4)
+	//bbox[0] = sds.ds.MinX
+
 	return geography.BBox{Bbox: nil}, nil
 }
 
