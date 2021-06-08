@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/HenryGeorgist/go-fathom/compute"
 	hp "github.com/HenryGeorgist/go-fathom/hazard_providers"
+	pi "github.com/HenryGeorgist/go-fathom/insurance"
 )
 
 func main() {
@@ -22,6 +22,6 @@ func main() {
 	//compute.ComputeMultiEvent_NSIStream(ds, "29", db)
 	//fe := hp.FathomEvent{Year: 2050, Frequency: 5, Fluvial: true}
 	//	compute.ComputeSingleEvent_NSIStream(ds, "29005", fe)
-	compute.ComputeSingleEvent_NSIStreamMonteCarlo(ds, "29005", 10)
-
+	//compute.ComputeSingleEvent_NSIStreamMonteCarlo(ds, "29005", 10)
+	pi.ComputeOptimalTriggerPremium(ds, "29005", 100)
 }
