@@ -23,5 +23,5 @@ func main() {
 	//fe := hp.FathomEvent{Year: 2050, Frequency: 5, Fluvial: true}
 	//	compute.ComputeSingleEvent_NSIStream(ds, "29005", fe)
 	//compute.ComputeSingleEvent_NSIStreamMonteCarlo(ds, "29005", 10)
-	pi.ComputeOptimalTriggerPremium(ds, "29005", 100)
+	pi.ComputeOptimalTriggerPremium(ds, "29005", 1000)
 }

@@ -35,8 +35,7 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 		rand.Seed(time.Now().UnixNano())
 		// random Fathom Event
 		randomnumber := rand.Float64()
-		freq := 1 / randomnumber
-		simarray[simnumber] = freq
+		simarray[simnumber] = randomnumber
 	}
 	structdamagesarray := make([]float64, simulations, simulations)
 
@@ -48,11 +47,13 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 	num := 0
 	nsp.ByFips(fips, func(s consequences.Receptor) {
 
+		errs := 0
 		for simnumber := 0; simnumber < simulations; simnumber++ {
-			fe := hazard_providers.FathomEvent{Year: 2020, Frequency: int(simarray[simnumber]), Fluvial: true}
+			fe := hazard_providers.FathomEvent{Year: 2020, Frequency: int(1 / simarray[simnumber]), Fluvial: true}
 			loc := geography.Location{X: s.Location().X, Y: s.Location().Y, SRID: s.Location().SRID}
 			fq := hazard_providers.FathomQuery{Location: loc, FathomEvent: fe}
 			result, err := ds.ProvideHazard(fq)
+			//fmt.Println(err)
 			//var results consequences.Results
 			if err == nil {
 				//structure presumably exists?
@@ -61,11 +62,15 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 					if depthevent.Depth() <= 0 {
 						//skip
 						structdamagesarray[simnumber] = 0.0
+						//fmt.Printf("Damage for freq %d is %d", simarray[simnumber], structdamagesarray[simnumber])
+						//fmt.Println()
 					} else {
 						r := s.Compute(depthevent)
 
 						// need to put structure
 						structdamages := r.Result[6].(float64)
+						//fmt.Printf("Damage for freq %d is %d", simarray[simnumber], structdamages)
+						//fmt.Println()
 						//contdamages := r.Result[7].(float64)
 						// optimization function
 
@@ -84,35 +89,43 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 					}
 				}
 
+			} else {
+				errs++
 			}
 		}
-		convertToPoints := func(n int) plotter.XYs {
-			pts := make(plotter.XYs, n)
-			for i := range pts {
-				pts[i].X = simarray[i]
-				pts[i].Y = structdamagesarray[i]
+
+		// find optimum value - mean in this quick case
+		// MeanOptimization(structdamagesarray, simarray)
+
+		if errs != simulations {
+			convertToPoints := func(n int) plotter.XYs {
+				pts := make(plotter.XYs, n)
+				for i := range pts {
+					pts[i].X = simarray[i]
+					pts[i].Y = structdamagesarray[i]
+				}
+				return pts
 			}
-			return pts
-		}
-		scatterData := convertToPoints(len(simarray))
-		// scatter plot
-		p := plot.New()
-		p.Title.Text = "Points Example"
-		p.X.Label.Text = "X"
-		p.Y.Label.Text = "Y"
-		p.Add(plotter.NewGrid())
+			scatterData := convertToPoints(len(simarray))
+			// scatter plot
+			p := plot.New()
+			p.Title.Text = "Damage - Frequency Curve"
+			p.X.Label.Text = "Frequency"
+			p.Y.Label.Text = "Damage ($)"
+			p.Add(plotter.NewGrid())
 
-		si, err := plotter.NewScatter(scatterData)
-		if err != nil {
-			log.Panic(err)
-		}
-		p.Add(si)
-		p.Legend.Add("scatter", si)
+			si, err := plotter.NewScatter(scatterData)
+			if err != nil {
+				log.Panic(err)
+			}
+			p.Add(si)
+			// p.Legend.Add("scatter", si)
 
-		err = p.Save(200, 200, fmt.Sprintf("img/scatter_%d.png", num))
-		num++
-		if err != nil {
-			log.Panic(err)
+			err = p.Save(200, 200, fmt.Sprintf("img/scatter_%d.png", num))
+			num++
+			if err != nil {
+				log.Panic(err)
+			}
 		}
 		fmt.Println("One building finished")
 	})
@@ -129,6 +142,19 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 
 	fmt.Println("Complete for " + fips)
 	return rmap
+}
+
+func MeanOptimization(structdamages []float64, frequencies []float64) float64 {
+	total := 0.0
+	for i := 0; i < len(structdamages); i++ {
+		total += structdamages[i]
+	}
+	mean := total / float64(len(structdamages))
+
+	// now relate this mean damage to the frequency
+	// somehow need to go backward here
+
+	return mean
 }
 
 func GradientDescentOptimization(structdamages []float64, contdamages []float64, frequencies []float64, epochs int, learning_rate float64) {
@@ -166,7 +192,7 @@ func GradientDescentOptimization(structdamages []float64, contdamages []float64,
 			// initialize the payout
 			payout := 0.0
 
-			if int(frequencies[i]) >= trigger {
+			if int(1/frequencies[i]) >= trigger {
 				payout = (premium / aal) * structdamages[i]
 			}
 			// the loss function here is the mean squared error of uninsured losses

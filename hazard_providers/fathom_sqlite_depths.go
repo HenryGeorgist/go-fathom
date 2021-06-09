@@ -29,7 +29,7 @@ func MergeSQLDepthNSIDataSet(nsiFilePath string) SQLDataSet {
 	//dbNsi, _ := sql.Open("sqlite3", nsiFilePath)
 	//start := time.Now()
 	dbDepth, _ := sql.Open("sqlite3", nsiFilePath)
-	dbDepth.SetMaxOpenConns(1)
+	//dbDepth.SetMaxOpenConns(1)
 	s := "ATTACH DATABASE '/workspaces/go-fathom/data/fathom-depths.db' as depths;"
 	statement, err := dbDepth.Prepare(s)
 	statement.Exec()
