@@ -6,6 +6,7 @@ require (
 	github.com/USACE/go-consequences v0.0.0-20210518025241-f4ff69d09a05
 	//github.com/sacohen11/go-consequences v0.0.0-20210330170734-b75dafca445d
 	github.com/mattn/go-sqlite3 v1.14.7
+	gonum.org/v1/gonum v0.8.2
 	gonum.org/v1/plot v0.9.0
 )
 
