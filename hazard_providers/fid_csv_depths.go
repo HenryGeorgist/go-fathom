@@ -77,34 +77,56 @@ func generateDepthEvent(frequency int, data FrequencyData, newData bool) (hazard
 	switch frequency {
 	case 2:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[0]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[0])
+			return h, nil
 		}
 		return hazards.DepthEvent{}, hazardproviders.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
 	case 5:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[1]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[1])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[0]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[0])
+		return h, nil
 	case 20:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[2]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[2])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[1]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[1])
+		return h, nil
 	case 100:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[3]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[3])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[2]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[2])
+		return h, nil
 	case 250:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[4]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[4])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[3]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[3])
+		return h, nil
 	case 500:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[5]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[5])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[4]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[4])
+		return h, nil
 	default:
 		return hazards.DepthEvent{}, hazardproviders.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
 	}
@@ -382,5 +404,8 @@ func WriteBackToDisk(ds DataSet, outputPath string, newData bool) {
 		w.WriteString(s)
 		w.Flush()
 	}
+
+}
+func (h DataSet) Close() {
 
 }

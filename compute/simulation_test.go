@@ -11,13 +11,14 @@ import (
 	"github.com/USACE/go-consequences/census"
 )
 
+/*
 func TestSingleEvent(t *testing.T) {
 	fmt.Println("Reading Depths")
 	ds := hazard_providers.ReadFeetFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Filtered_Feet.csv")
 	fmt.Println("Finished Reading Depths")
 	fe := hazard_providers.FathomEvent{Year: 2050, Frequency: 5, Fluvial: true}
 	ComputeSingleEvent_NSIStream(ds, "11", fe)
-}
+}*/
 func TestMultiEvent(t *testing.T) {
 	fmt.Println("Reading Depths")
 	ds := hazard_providers.ReadFeetFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Filtered_Feet.csv")
@@ -32,6 +33,8 @@ func TestMultiEvent_MultiState(t *testing.T) {
 	fmt.Println("Finished Reading Depths")
 	ComputeMultiFips_MultiEvent(ds)
 }
+
+/*
 func TestSQLMultiEvent_SingleState(t *testing.T) {
 	fmt.Println("Reading Depths")
 	ds := hazard_providers.OpenSQLDepthDataSet()
@@ -46,7 +49,7 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 	fmt.Println("Finished Reading Depths")
 	ComputeMultiFips_MultiEvent(ds)
 }
-
+*/
 func TestComputeNewFile(t *testing.T) {
 	ss := []string{"51"}
 	var wg sync.WaitGroup
