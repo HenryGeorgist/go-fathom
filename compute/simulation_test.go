@@ -7,51 +7,12 @@ import (
 	"testing"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
-	"github.com/HenryGeorgist/go-fathom/store"
 	"github.com/USACE/go-consequences/census"
+	"github.com/USACE/go-consequences/structureprovider"
 )
 
-/*
-func TestSingleEvent(t *testing.T) {
-	fmt.Println("Reading Depths")
-	ds := hazard_providers.ReadFeetFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Filtered_Feet.csv")
-	fmt.Println("Finished Reading Depths")
-	fe := hazard_providers.FathomEvent{Year: 2050, Frequency: 5, Fluvial: true}
-	ComputeSingleEvent_NSIStream(ds, "11", fe)
-}*/
-func TestMultiEvent(t *testing.T) {
-	fmt.Println("Reading Depths")
-	ds := hazard_providers.ReadFeetFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Filtered_Feet.csv")
-	fmt.Println("Finished Reading Depths")
-	db := store.CreateDatabase()
-	defer db.Close()
-	ComputeMultiEvent_NSIStream(ds, "11", db)
-}
-func TestMultiEvent_MultiState(t *testing.T) {
-	fmt.Println("Reading Depths")
-	ds := hazard_providers.ReadFeetFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Filtered_Feet.csv")
-	fmt.Println("Finished Reading Depths")
-	ComputeMultiFips_MultiEvent(ds)
-}
-
-/*
-func TestSQLMultiEvent_SingleState(t *testing.T) {
-	fmt.Println("Reading Depths")
-	ds := hazard_providers.OpenSQLDepthDataSet()
-	fmt.Println("Finished Reading Depths")
-	db := store.CreateDatabase()
-	defer db.Close()
-	ComputeMultiEvent_NSIStream(ds, "11", db)
-}
-func TestSQL_MultiEvent_MultiState(t *testing.T) {
-	fmt.Println("Reading Depths")
-	ds := hazard_providers.OpenSQLDepthDataSet()
-	fmt.Println("Finished Reading Depths")
-	ComputeMultiFips_MultiEvent(ds)
-}
-*/
 func TestComputeNewFile(t *testing.T) {
-	ss := []string{"51"}
+	ss := []string{"11"}
 	var wg sync.WaitGroup
 	wg.Add(len(ss))
 	for _, s := range ss {
@@ -67,13 +28,18 @@ func computeState_New(ss string) {
 	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Pluvial\\NSI_Fathom_depths%v_feet.csv", ss)
 	ds := hazard_providers.ReadFeetFile(path)
 	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Pluvial\\NSI_Fathom_damages_%v.csv", ss)
-	outputFile, error := os.Create(outputpath)
+	outputFile, err := os.Create(outputpath)
 	defer outputFile.Close()
-	if error != nil {
-		panic(error)
+	if err != nil {
+		panic(err)
 	}
 	//compute
-	ComputeMultiEvent_NSIStream_toFile_withNew(ds, ss, outputFile, true)
+	/*sp, err := structureprovider.InitGPK("C:\\Examples\\go-tc-consequences\\data\\nsi.gpkg", "nsi")
+	if err != nil {
+		panic(err)
+	}*/
+	sp := structureprovider.InitNSISP()
+	ComputeMultiEvent_NSIStream_toFile_withNew(ds, sp, ss, outputFile, true)
 }
 func TestMulti_State_ComputeNewFile(t *testing.T) {
 	fmap := census.StateToCountyFipsMap()
