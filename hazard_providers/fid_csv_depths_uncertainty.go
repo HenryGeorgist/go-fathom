@@ -3,31 +3,39 @@ package hazard_providers
 import (
 	"errors"
 
-	"github.com/USACE/go-consequences/hazards"
+	"github.com/HydrologicEngineeringCenter/go-statistics/statistics"
 )
 
 type StochasticDataSet struct {
 	Data              map[string]Record
-	Mean              float64
 	StandardDeviation float64
+	Frequencies       []float64 //{.5, .2, .05, .01, .004, .002}
 }
 
-func (ds StochasticDataSet) ProvideFutureFluvialRatingCurve(fd_id string) (RatingCurve, error) {
-
+func (ds StochasticDataSet) ProvideStageFrequencyCurve(fd_id string, year int, fluvial bool) (StageFrequencyCurve, error) {
 	r, found := ds.Data[fd_id]
 	if found {
-		return generateRatingCurve(r.FutureFluvial, true)
+		if year == 2020 {
+			if fluvial {
+				return generateStageFrequencyCurve(r.CurrentFluvial, ds.StandardDeviation, ds.Frequencies)
+			} else {
+				return generateStageFrequencyCurve(r.CurrentPluvial, ds.StandardDeviation, ds.Frequencies)
+			}
+		} else {
+			if fluvial {
+				return generateStageFrequencyCurve(r.FutureFluvial, ds.StandardDeviation, ds.Frequencies)
+			} else {
+				return generateStageFrequencyCurve(r.FuturePluvial, ds.StandardDeviation, ds.Frequencies)
+			}
+		}
 	}
-	return RatingCurve{}, errors.New("nope.")
+	return StageFrequencyCurve{}, errors.New("nope.")
 }
-func generateRatingCurve(data FrequencyData, newData bool) (RatingCurve, error) {
-	hs := make([]hazards.DepthEvent, len(data.Values))
-	fs := make([]float64, len(data.Values))
+func generateStageFrequencyCurve(data FrequencyData, sd float64, frequencies []float64) (StageFrequencyCurve, error) {
+	hs := make([]statistics.ContinuousDistribution, len(data.Values))
 	for i, d := range data.Values {
-		h := hazards.DepthEvent{}
-		h.SetDepth(d)
-		hs[i] = h
-		fs[i] = .05 //just to start - need to define an array of frequencies.
+		n := statistics.NormalDistribution{Mean: d, StandardDeviation: sd}
+		hs[i] = n
 	}
-	return RatingCurve{Hazards: hs, Frequencies: fs}, nil
+	return StageFrequencyCurve{Stages: hs, Frequencies: frequencies}, nil
 }
