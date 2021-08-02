@@ -297,17 +297,18 @@ func hasNonZeroValues(ffvals []float64, fpvals []float64, cfvals []float64, cpva
 	if newData {
 		records = 6
 	}
+	missingDataValue := 9999.0
 	for i := 0; i < records; i++ {
-		if ffvals[i] > 0 {
+		if ffvals[i] != missingDataValue {
 			return true
 		}
-		if fpvals[i] > 0 {
+		if fpvals[i] != missingDataValue {
 			return true
 		}
-		if cfvals[i] > 0 {
+		if cfvals[i] != missingDataValue {
 			return true
 		}
-		if cpvals[i] > 0 {
+		if cpvals[i] != missingDataValue {
 			return true
 		}
 	}

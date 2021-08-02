@@ -1,6 +1,8 @@
 package compute
 
 import (
+	"fmt"
+	"math"
 	"math/rand"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
@@ -10,15 +12,15 @@ import (
 	"github.com/USACE/go-consequences/structures"
 )
 
-func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structures.StructureStochastic) (*data.InlineHistogram, error) {
-	eaddist := data.Init(.05, 0, 1) //percent of total value?
+func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structures.StructureStochastic, binWidth float64, binStart float64, binEnd float64, iterations int) (*data.InlineHistogram, error) {
+	eaddist := data.Init(binWidth, binStart, binEnd) //percent of total value?
 
 	structureSeed := 1234                                                     //create a seed sequence for the structure
 	stageFrequencySeed := 4431                                                //create a seed sequence for the stage frequency
 	structureRand := rand.New(rand.NewSource(int64(structureSeed)))           //not concurrent safe
 	stageFrequencyRand := rand.New(rand.NewSource(int64(stageFrequencySeed))) //not concurrent safe.
 	//for some number of iterations
-	for i := 0; i < 100; i++ { //just a guess...
+	for i := 0; i < iterations; i++ {
 		ds := s.SampleStructure(structureRand.Int63()) // sample a structure
 		dsfc := sfc.Sample(stageFrequencyRand.Float64())
 		realizationDamages := make([]float64, len(dsfc))
@@ -41,11 +43,24 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 			sdam := stdam.(float64)
 			cdam := condam.(float64)
 			tdam := sdam + cdam
-			dampercent := tdam / (ds.StructVal + ds.ContVal)
+			totval := ds.StructVal + ds.ContVal
+			dampercent := tdam / (totval)
+			if totval == 0 {
+				dampercent = 0
+			}
 			realizationDamages[idx] = dampercent
 
 		}
 		eadEst := compute.ComputeSpecialEAD(realizationDamages, sfc.Frequencies)
+		if math.IsNaN(eadEst) {
+			fmt.Println(fmt.Sprintf("%v", eadEst))
+		}
+		if eadEst < 0 {
+			fmt.Println(fmt.Sprintf("%v", eadEst))
+		}
+		if eadEst > 1 {
+			fmt.Println(fmt.Sprintf("%v", eadEst))
+		}
 		eaddist.AddObservation(eadEst)
 	}
 	return eaddist, nil
