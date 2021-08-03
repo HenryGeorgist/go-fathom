@@ -173,23 +173,30 @@ func ConvertFile(file string) DataSet {
 				//2050
 				if fluvial {
 					ffvals[ffidx], err = strconv.ParseFloat(lines[i], 64)
-					ffvals[ffidx] = ffvals[ffidx] / 30.48 //centimeters to feet
+					if ffvals[ffidx] != 9999.0 {
+						ffvals[ffidx] = ffvals[ffidx] / 30.48 //centimeters to feet
+					}
 					ffidx++
 				} else {
 					fpvals[fpidx], err = strconv.ParseFloat(lines[i], 64)
-					fpvals[fpidx] = fpvals[fpidx] / 30.48 //centimeters to feet
-					fpidx++                               //new data coastal...
+					if fpvals[fpidx] != 9999.0 {
+						fpvals[fpidx] = fpvals[fpidx] / 30.48 //centimeters to feet
+					}
+					fpidx++ //new data coastal...
 				}
 			} else {
 				//2020
 				if fluvial {
 					cfvals[cfidx], err = strconv.ParseFloat(lines[i], 64)
-					//fmt.Println("current fluvial")
-					cfvals[cfidx] = cfvals[cfidx] / 30.48 //centimeters to feet
+					if cfvals[cfidx] != 9999.0 {
+						cfvals[cfidx] = cfvals[cfidx] / 30.48 //centimeters to feet
+					}
 					cfidx++
 				} else {
 					cpvals[cpidx], err = strconv.ParseFloat(lines[i], 64)
-					cpvals[cpidx] = cpvals[cpidx] / 30.48 //centimeters to feet
+					if cpvals[cpidx] != 9999.0 {
+						cpvals[cpidx] = cpvals[cpidx] / 30.48 //centimeters to feet
+					}
 					//fmt.Println("current pluvial") //new data coastal...
 					cpidx++
 				}
@@ -293,10 +300,7 @@ func ReadFeetFile(file string) DataSet {
 	return ds
 }
 func hasNonZeroValues(ffvals []float64, fpvals []float64, cfvals []float64, cpvals []float64, newData bool) bool {
-	records := 5
-	if newData {
-		records = 6
-	}
+	records := len(ffvals)
 	missingDataValue := 9999.0
 	for i := 0; i < records; i++ {
 		if ffvals[i] != missingDataValue {
@@ -327,20 +331,28 @@ func hasValidData(fd_id string, ffvals []float64, fpvals []float64, cfvals []flo
 	datasetvalid := true
 	for i := 1; i < records; i++ {
 		if ffvals[i] < ffvals[i-1] {
-			ffvalid = false
-			datasetvalid = false
+			if ffvals[i-1] != 9999 {
+				ffvalid = false
+				datasetvalid = false
+			}
 		}
 		if fpvals[i] < fpvals[i-1] {
-			fpvalid = false
-			datasetvalid = false
+			if fpvals[i-1] != 9999 {
+				fpvalid = false
+				datasetvalid = false
+			}
 		}
 		if cfvals[i] < cfvals[i-1] {
-			cfvalid = false
-			datasetvalid = false
+			if cfvals[i-1] != 9999 {
+				cfvalid = false
+				datasetvalid = false
+			}
 		}
 		if cpvals[i] < cpvals[i-1] {
-			cpvalid = false
-			datasetvalid = false
+			if cpvals[i-1] != 9999 {
+				cpvalid = false
+				datasetvalid = false
+			}
 		}
 	}
 	if !datasetvalid {
