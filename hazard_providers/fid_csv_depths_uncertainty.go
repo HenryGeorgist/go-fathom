@@ -32,19 +32,20 @@ func (ds StochasticDataSet) ProvideStageFrequencyCurve(fd_id string, year int, f
 	return StageFrequencyCurve{}, errors.New("nope.")
 }
 func generateStageFrequencyCurve(data FrequencyData, sd float64, frequencies []float64) (StageFrequencyCurve, error) {
-	hs := make([]statistics.ContinuousDistribution, len(data.Values))
-	depthsAreInvalid := true
+	var hs []statistics.ContinuousDistribution
+	var fs []float64
+	nullcount := 0
 	for i, d := range data.Values {
-		if d > 0 {
-			depthsAreInvalid = false
+		if d != 9999 {
+			n := statistics.NormalDistribution{Mean: d, StandardDeviation: sd}
+			hs = append(hs, n)
+			fs = append(fs, frequencies[i])
+		} else {
+			nullcount += 1
 		}
-		n := statistics.NormalDistribution{Mean: d, StandardDeviation: sd}
-		hs[i] = n
 	}
-	if !depthsAreInvalid {
-		return StageFrequencyCurve{Stages: hs, Frequencies: frequencies}, nil
-	} else {
-		return StageFrequencyCurve{}, errors.New("depths are not valid")
+	if nullcount == len(frequencies) {
+		return StageFrequencyCurve{Stages: hs, Frequencies: fs}, errors.New("no valid data was found")
 	}
-
+	return StageFrequencyCurve{Stages: hs, Frequencies: fs}, nil
 }
