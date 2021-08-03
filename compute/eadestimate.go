@@ -26,20 +26,27 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 		realizationDamages := make([]float64, len(dsfc))
 		//for each deterministic ordinate compute damage for the sampled structure
 		for idx, d := range dsfc {
-			de := hazards.DepthEvent{}
-			de.SetDepth(d)
-			r, err := ds.Compute(de)
-			if err != nil {
-				panic(err)
+			var stdam interface{}
+			var condam interface{}
+			stdam = 0.0
+			condam = 0.0
+			if d >= 0 {
+				de := hazards.DepthEvent{}
+				de.SetDepth(d)
+				r, err := ds.Compute(de)
+				if err != nil {
+					panic(err)
+				}
+				stdam, err = r.Fetch("structure damage")
+				if err != nil {
+					panic(err)
+				}
+				condam, err = r.Fetch("content damage")
+				if err != nil {
+					panic(err)
+				}
 			}
-			stdam, err := r.Fetch("structure damage")
-			if err != nil {
-				panic(err)
-			}
-			condam, err := r.Fetch("content damage")
-			if err != nil {
-				panic(err)
-			}
+
 			sdam := stdam.(float64)
 			cdam := condam.(float64)
 			tdam := sdam + cdam

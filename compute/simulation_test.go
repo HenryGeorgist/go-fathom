@@ -29,7 +29,7 @@ func TestCompute_UserProvidedList(t *testing.T) {
 	fmt.Println(diff)
 }
 func computeState(ss string) {
-	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_Pluvial\\NSI_Fathom_depths%v_feet.csv", ss)
+	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_Uncertainty\\NSI_Fathom_depths%v_feet.csv", ss)
 	ds := hazard_providers.ReadFeetFile(path)
 	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_Uncertainty\\NSI_Fathom_damages_%v.csv", ss)
 	outputFile, err := os.Create(outputpath)

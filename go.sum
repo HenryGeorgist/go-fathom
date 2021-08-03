@@ -2,8 +2,12 @@ github.com/HydrologicEngineeringCenter/go-statistics v0.0.0-20210721135724-64780
 github.com/HydrologicEngineeringCenter/go-statistics v0.0.0-20210721135724-6478074dde32/go.mod h1:emMoyYiFKgCy3DPFt4uKUdHZ9FwC8k1YArGNifarbmg=
 github.com/HydrologicEngineeringCenter/go-statistics v0.0.0-20210801223832-26ff6cd12ed9 h1:7vWUEhE3EOYN9IJA1peWJrCkHND6WlIn9qDU58ZDK+4=
 github.com/HydrologicEngineeringCenter/go-statistics v0.0.0-20210801223832-26ff6cd12ed9/go.mod h1:emMoyYiFKgCy3DPFt4uKUdHZ9FwC8k1YArGNifarbmg=
+github.com/HydrologicEngineeringCenter/go-statistics v0.0.0-20210802152938-62762a4040a1 h1:ECfkaE790JCSLtTLnciZGNpCm80b677gBmTrSH3mMPU=
+github.com/HydrologicEngineeringCenter/go-statistics v0.0.0-20210802152938-62762a4040a1/go.mod h1:emMoyYiFKgCy3DPFt4uKUdHZ9FwC8k1YArGNifarbmg=
 github.com/USACE/go-consequences v0.0.0-20210801024354-9ee404d7c57e h1:EzUM6NA+k9pUqwuhLF0ON+Ypk8eFlTkUblulZK4kTp8=
 github.com/USACE/go-consequences v0.0.0-20210801024354-9ee404d7c57e/go.mod h1:CIKB9T/jXUweXejuLTBb30TbhGQOnbovNm0BaXsXIBw=
+github.com/USACE/go-consequences v0.0.0-20210802143930-0a02d36f8eba h1:XQAwkoFJ2DQM3JaB2S49rSbgCDKEHS2f+fHdY+qj/GE=
+github.com/USACE/go-consequences v0.0.0-20210802143930-0a02d36f8eba/go.mod h1:CIKB9T/jXUweXejuLTBb30TbhGQOnbovNm0BaXsXIBw=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/dewberry/gdal v0.3.2 h1:TqvMiSNbd8Cc5QwgOI92Dbg8zz08PWs8Vwk+WLYSSJE=
