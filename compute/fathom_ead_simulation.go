@@ -58,9 +58,11 @@ func ComputeEadByFips(ds hazard_providers.StochasticDataSet, sp consequences.Str
 				//write to output file.
 				results := make([]float64, 4)
 				stringifiedhistos := make([]string, 4)
+				eadsum := 0.0
 				for idx, b := range histogramExists {
 					if b {
 						results[idx] = histograms[idx].Mean() * (str.ContVal.CentralTendency() + str.StructVal.CentralTendency())
+						eadsum += results[idx]
 						stringifiedhistos[idx] = writeHistoValues(histograms[idx], iterations, str, binWidth, binStart, binEnd)
 					} else {
 						results[idx] = 0
@@ -69,8 +71,9 @@ func ComputeEadByFips(ds hazard_providers.StochasticDataSet, sp consequences.Str
 				}
 				//outputFile.WriteString("FD_ID,X,Y,County,CB,OccType,DamCat,foundHt,StructVal,ContVal,PopDay,PopNight,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
 				county := str.CBFips[0:5] //county is first five characters of the cb.
-
-				outputFile.WriteString(fmt.Sprintf("%s,%f,%f,%s,%s,%s,%s,%f,%f,%f,%d,%d,%f,%f,%f,%f%s%s%s%s\n", str.Name, str.X, str.Y, county, str.CBFips, str.OccType.Name, str.DamCat, str.FoundHt.CentralTendency(), str.StructVal.CentralTendency(), str.ContVal.CentralTendency(), str.Pop2amu65+str.Pop2amo65, str.Pop2pmu65+str.Pop2pmo65, results[0], results[2], results[1], results[3], stringifiedhistos[0], stringifiedhistos[2], stringifiedhistos[1], stringifiedhistos[3]))
+				if eadsum > 0 {
+					outputFile.WriteString(fmt.Sprintf("%s,%f,%f,%s,%s,%s,%s,%f,%f,%f,%d,%d,%f,%f,%f,%f%s%s%s%s\n", str.Name, str.X, str.Y, county, str.CBFips, str.OccType.Name, str.DamCat, str.FoundHt.CentralTendency(), str.StructVal.CentralTendency(), str.ContVal.CentralTendency(), str.Pop2amu65+str.Pop2amo65, str.Pop2pmu65+str.Pop2pmo65, results[0], results[2], results[1], results[3], stringifiedhistos[0], stringifiedhistos[2], stringifiedhistos[1], stringifiedhistos[3]))
+				}
 			}
 		}
 
