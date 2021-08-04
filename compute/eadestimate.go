@@ -1,8 +1,7 @@
 package compute
 
 import (
-	"fmt"
-	"math"
+	"errors"
 	"math/rand"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
@@ -11,14 +10,20 @@ import (
 	"github.com/USACE/go-consequences/structures"
 )
 
-func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structures.StructureStochastic, binWidth float64, binStart float64, binEnd float64, iterations int) ([]float64, error) {
+func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structures.StructureStochastic, iterations int) ([]float64, error) { //, binWidth float64, binStart float64, binEnd float64, iterations int) ([]float64, error) {
 	//eaddist := data.Init(binWidth, binStart, binEnd) //percent of total value?
+	if iterations == 1 {
+		s.UseUncertainty = false
+	} else {
+		s.UseUncertainty = true
+	}
 	eadlist := make([]float64, iterations)
 	structureSeed := 1234 //create a seed sequence for the structure
 	//stageFrequencySeed := 4431                                                //create a seed sequence for the stage frequency
 	structureRand := rand.New(rand.NewSource(int64(structureSeed))) //not concurrent safe
 	//stageFrequencyRand := rand.New(rand.NewSource(int64(stageFrequencySeed))) //not concurrent safe.
 	//for some number of iterations
+	counter := 0
 	for i := 0; i < iterations; i++ {
 		ds := s.SampleStructure(structureRand.Int63()) // sample a structure
 		//dsfc := sfc.Sample(stageFrequencyRand.Float64())
@@ -59,7 +64,7 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 
 		}
 		eadEst := compute.ComputeSpecialEAD(realizationDamages, sfc.Frequencies)
-		if math.IsNaN(eadEst) {
+		/*if math.IsNaN(eadEst) {
 			fmt.Println(fmt.Sprintf("%v", eadEst))
 		}
 		if eadEst < 0 {
@@ -67,9 +72,15 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 		}
 		if eadEst > 1 {
 			fmt.Println(fmt.Sprintf("%v", eadEst))
-		}
+		}*/
 		//eaddist.AddObservation(eadEst)
+		if eadEst == 0 {
+			counter += 1
+		}
 		eadlist[i] = eadEst
+	}
+	if counter == iterations {
+		return eadlist, errors.New("no damages detected.")
 	}
 	return eadlist, nil
 }
