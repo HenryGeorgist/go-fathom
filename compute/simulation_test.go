@@ -45,7 +45,8 @@ func computeState(ss string) {
 	//sp := structureprovider.InitNSISP()
 	frequencies := []float64{.5, .2, .05, .01, .004, .002}
 	sds := hazard_providers.StochasticDataSet{Data: ds.Data, StandardDeviation: 3.28084, Frequencies: frequencies}
-	ComputeEadByFips(sds, sp, ss, outputFile, true)
+	iterations := 1
+	ComputeEadByFips(sds, sp, ss, outputFile, iterations)
 }
 func Test_Compute_AllStates(t *testing.T) {
 	fmap := census.StateToCountyFipsMap()
