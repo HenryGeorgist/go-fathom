@@ -35,7 +35,7 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 			var condam interface{}
 			stdam = 0.0
 			condam = 0.0
-			if d >= 0 {
+			if d > 0 {
 				de := hazards.DepthEvent{}
 				de.SetDepth(d)
 				r, err := ds.Compute(de)
