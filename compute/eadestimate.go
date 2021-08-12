@@ -27,6 +27,12 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 	for i := 0; i < iterations; i++ {
 		ds := s.SampleStructure(structureRand.Int63()) // sample a structure
 		//dsfc := sfc.Sample(stageFrequencyRand.Float64())
+		if ds.NumStories > 3 {
+			floorsval := ds.StructVal / float64(ds.NumStories)
+			floorcval := ds.ContVal / float64(ds.NumStories)
+			ds.StructVal = floorsval * 2
+			ds.ContVal = floorcval * 2
+		}
 		dsfc := sfc.Sample(float64(float64(i)+0.5) / float64(iterations))
 		realizationDamages := make([]float64, len(dsfc))
 		//for each deterministic ordinate compute damage for the sampled structure
@@ -35,20 +41,22 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 			var condam interface{}
 			stdam = 0.0
 			condam = 0.0
-			if d > 0 {
-				de := hazards.DepthEvent{}
-				de.SetDepth(d)
-				r, err := ds.Compute(de)
-				if err != nil {
-					panic(err)
-				}
-				stdam, err = r.Fetch("structure damage")
-				if err != nil {
-					panic(err)
-				}
-				condam, err = r.Fetch("content damage")
-				if err != nil {
-					panic(err)
+			if sfc.Frequencies[idx] < .4 { //no damage more frequently than the x year (actually 2 and 5 year.)
+				if d > 0 {
+					de := hazards.DepthEvent{}
+					de.SetDepth(d)
+					r, err := ds.Compute(de)
+					if err != nil {
+						panic(err)
+					}
+					stdam, err = r.Fetch("structure damage")
+					if err != nil {
+						panic(err)
+					}
+					condam, err = r.Fetch("content damage")
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 

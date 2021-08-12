@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+
+	"github.com/USACE/go-consequences/census"
 )
 
 func TestOpen(t *testing.T) {
@@ -21,12 +23,12 @@ func TestConvert(t *testing.T) {
 	WriteBackToDisk(ConvertFile("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths.csv"), "C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_feet.csv", false)
 }
 func TestConvertNewFile(t *testing.T) {
-	//fmap := census.StateToCountyFipsMap()
-	fmap := []string{"11"}
+	fmap := census.StateToCountyFipsMap()
+	//fmap := []string{"11"}
 	var wg sync.WaitGroup
 	wg.Add(len(fmap))
-	for _, ss := range fmap {
-		//for ss, _ := range fmap {
+	//for _, ss := range fmap {
+	for ss, _ := range fmap {
 		go func(ss string) {
 			defer wg.Done()
 			fmt.Println("Computing " + ss)
