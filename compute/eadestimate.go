@@ -41,7 +41,7 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 			var condam interface{}
 			stdam = 0.0
 			condam = 0.0
-			if sfc.Frequencies[idx] < .4 { //no damage more frequently than the x year (actually 2 and 5 year.)
+			if sfc.Frequencies[idx] < .1 { //no damage more frequently than the x year
 				if d > 0 {
 					de := hazards.DepthEvent{}
 					de.SetDepth(d)

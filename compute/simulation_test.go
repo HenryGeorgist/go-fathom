@@ -13,7 +13,7 @@ import (
 )
 
 func TestCompute_UserProvidedList(t *testing.T) {
-	ss := []string{"11"} //[]string{"02", "05", "15", "41", "20", "56", "45"}
+	ss := []string{"37"} //[]string{"02", "05", "15", "41", "20", "56", "45"}
 	st := time.Now()
 	var wg sync.WaitGroup
 	wg.Add(len(ss))
@@ -31,7 +31,7 @@ func TestCompute_UserProvidedList(t *testing.T) {
 func computeState(ss string) {
 	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_Uncertainty\\NSI_Fathom_depths%v_feet.csv", ss)
 	ds := hazard_providers.ReadFeetFile(path)
-	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_Uncertainty\\NSI_Fathom_damages_%v_2y_storiesonly.csv", ss)
+	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_Uncertainty\\NSI_Fathom_damages_%v_10y_stories_damagecurves.csv", ss)
 	outputFile, err := os.Create(outputpath)
 	defer outputFile.Close()
 	if err != nil {

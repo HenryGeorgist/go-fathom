@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
+	fstructs "github.com/HenryGeorgist/go-fathom/structures"
 	"github.com/HydrologicEngineeringCenter/go-statistics/data"
 	"github.com/USACE/go-consequences/consequences"
 	"github.com/USACE/go-consequences/structures"
@@ -24,12 +25,18 @@ func ComputeEadByFips(ds hazard_providers.StochasticDataSet, sp consequences.Str
 	eadsExists := make([]bool, 4)
 	index := 0
 	otfdm := FoundationDistributionMap()
+	focctypes := fstructs.OccupancyTypeMap()
 	crawlfhd := otfdm["Craw"]
 	fhd := otfdm["Slab"]
 	ok := true
 	sp.ByFips(fips, func(cr consequences.Receptor) {
 		str, sok := cr.(structures.StructureStochastic)
 		if iterations != 1 {
+			focctype, ook := focctypes[str.OccType.Name]
+			if ook {
+				str.OccType = focctype
+				str.ContVal = consequences.ParameterValue{Value: str.StructVal.CentralTendency() * .4}
+			}
 			fhd, ok = otfdm[str.FoundType]
 			if ok {
 				str.FoundHt = consequences.ParameterValue{Value: fhd}

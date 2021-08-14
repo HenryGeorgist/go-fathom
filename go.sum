@@ -22,6 +22,8 @@ github.com/USACE/go-consequences v0.0.0-20210811024715-aad7e5f88194 h1:yw2QSW9jY
 github.com/USACE/go-consequences v0.0.0-20210811024715-aad7e5f88194/go.mod h1:5O5umxzDZilMxM20m8eY0EN9AN7JHaX/U5rXt+G+f8Y=
 github.com/USACE/go-consequences v0.0.0-20210812022743-e3e437941e10 h1:2NUOc38agsr+5XxNPtFkwi1f4nEJn8pGIApSMuEk5YY=
 github.com/USACE/go-consequences v0.0.0-20210812022743-e3e437941e10/go.mod h1:5O5umxzDZilMxM20m8eY0EN9AN7JHaX/U5rXt+G+f8Y=
+github.com/USACE/go-consequences v0.0.0-20210812222035-816f19cac6db h1:UWYeBGV9q/Oq2AXCvIC6j1Faz9Oo9veOEr25SEUOCOg=
+github.com/USACE/go-consequences v0.0.0-20210812222035-816f19cac6db/go.mod h1:5O5umxzDZilMxM20m8eY0EN9AN7JHaX/U5rXt+G+f8Y=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/dewberry/gdal v0.3.2 h1:TqvMiSNbd8Cc5QwgOI92Dbg8zz08PWs8Vwk+WLYSSJE=
