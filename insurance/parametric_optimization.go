@@ -21,19 +21,12 @@ import (
 	"gonum.org/v1/plot/plotter"
 )
 
-type InsuranceResults struct {
-	Premium         float64
-	Trigger         float64
-	Totallosses     float64
-	Uninsuredlosses float64
-}
-
-func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, simulations int) map[string]InsuranceResults {
-	rmap := make(map[string]InsuranceResults)
+func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, simulations int) map[string]graphing.InsuranceResults {
+	rmap := make(map[string]graphing.InsuranceResults)
 	fmt.Println("Downloading NSI by fips " + fips)
 
 	// create array of random frequency events
-	simarray := make([]float64, simulations, simulations)
+	simarray := make([]float64, simulations)
 	for simnumber := 0; simnumber < simulations; simnumber++ {
 		// set the seed
 		rand.Seed(time.Now().UnixNano())
@@ -44,11 +37,15 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 
 	// graph the frequencies with a histogram
 	graphing.InsuranceFrequencyHistogram(simarray, "Flood Magnitude Histogram", "histogram_freqs.png")
+	graphing.InsuranceFrequencyHistogramFiltered(simarray, "Flood Magnitude Histogram Filtered", "histogram_freqs_filt.png")
 
-	structdamagesarray := make([]float64, simulations, simulations)
+	structdamagesarray := make([]float64, simulations)
 
 	// initialize the NSI
-	nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+	nsp, err := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// Start time
 	// start := time.Now()
@@ -56,8 +53,10 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 	economicdamages := 0.0
 	uninsuredlosses := 0.0
 	insuredlosses := 0.0
-	nsp.ByFips(fips, func(s consequences.Receptor) {
 
+	nsp.ByFips(fips, func(s consequences.Receptor) {
+		var fd_id_search string
+		count_fd_id := 0
 		errs := 0
 		for simnumber := 0; simnumber < simulations; simnumber++ {
 			fe := hazard_providers.FathomEvent{Year: 2020, Frequency: int(1 / simarray[simnumber]), Fluvial: true}
@@ -76,9 +75,16 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 						//fmt.Printf("Damage for freq %d is %d", simarray[simnumber], structdamagesarray[simnumber])
 						//fmt.Println()
 					} else {
-						r := s.Compute(depthevent)
+						r, err := s.Compute(depthevent)
+						if err != nil {
+							fmt.Println(err)
+						}
+						if count_fd_id == 0 {
+							fd_id_search = r.Result[0].(string)
+						}
 						structdamages := r.Result[6].(float64)
 						structdamagesarray[simnumber] = structdamages
+						count_fd_id++
 					}
 				}
 
@@ -86,14 +92,12 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 				errs++
 			}
 		}
-		//trigger := GradientDescentOptimization(structdamagesarray, simarray, 20, .001)
+		//payout, premium, trigger := GradientDescentOptimization(structdamagesarray, simarray, 20, .001)
 		payout, premium, trigger := MeanOptimization(structdamagesarray, simarray, s, ds)
 		//var data = paireddata.PairedData{simarray, structdamagesarray}
 		//payout := data.SampleValue(trigger)
 
-		// find optimum value - mean in this quick case
-		// MeanOptimization(structdamagesarray, simarray)
-		simarraygraph := make([]float64, simulations, simulations)
+		simarraygraph := make([]float64, simulations)
 		for i := 0; i < len(simarray); i++ {
 			simarraygraph[i] = 1 - simarray[i]
 		}
@@ -137,12 +141,15 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 			//py.GlyphStyle.Shape = py.Shape
 			p.Add(py)
 
-			err = p.Save(250, 250, fmt.Sprintf("img/scatter_%d.png", num))
+			err = p.Save(250, 250, fmt.Sprintf("img/scatter_%v.png", fd_id_search))
 			num++
 			if err != nil {
 				log.Panic(err)
 			}
 		}
+
+		graphing.ExampleGraphsPPTX(s, ds, fd_id_search)
+
 		totallossessum := 0.0
 		for i := 0; i < len(structdamagesarray); i++ {
 			economicdamages += structdamagesarray[i]
@@ -157,7 +164,7 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 				uninsuredlossessum += structdamagesarray[i]
 			}
 		}
-		rmap[fmt.Sprintf("structure_%d", num)] = InsuranceResults{Premium: premium, Trigger: trigger, Totallosses: totallossessum, Uninsuredlosses: uninsuredlossessum}
+		rmap[fmt.Sprintf("structure_%d", num)] = graphing.InsuranceResults{Premium: premium, Trigger: trigger, Totallosses: totallossessum, Uninsuredlosses: uninsuredlossessum}
 
 		fmt.Println("One building finished")
 	})
@@ -169,9 +176,14 @@ func ComputeOptimalTriggerPremium(ds hazard_providers.SQLDataSet, fips string, s
 	fmt.Println()
 
 	// aggregate graphs for each category
-	graphing.InsuranceSummaryHistogram(rmap, "trigger", "Histgram of Trigger Values for All Structures", "histogram_trigger.png")
-	graphing.InsuranceSummaryHistogram(rmap, "premium", "Histgram of Premium Values for All Structures", "histogram_premium.png")
-	graphing.InsuranceSummaryHistogram(rmap, "total losses", "Histgram of Total Losses Values for All Structures", "histogram_totalloss.png")
+	graphing.InsuranceSummaryHistogram(rmap, "trigger", "Histogram of Trigger Values for All Structures", "histogram_trigger.png")
+	//graphing.InsuranceSummaryHistogramFiltered(rmap, "trigger", "Filtered Histogram of Trigger Values for All Structures", "histogram_trigger_filt.png")
+
+	graphing.InsuranceSummaryHistogram(rmap, "premium", "Histogram of Premium Values for All Structures", "histogram_premium.png")
+	//graphing.InsuranceSummaryHistogramFiltered(rmap, "premium", "Filtered Histogram of Premium Values for All Structures", "histogram_premium_filt.png")
+
+	graphing.InsuranceSummaryHistogram(rmap, "total losses", "Histogram of Total Losses Values for All Structures", "histogram_totalloss.png")
+	//graphing.InsuranceSummaryHistogramFiltered(rmap, "total losses", "Filtered Histogram of Total Losses Values for All Structures", "histogram_totalloss_filt.png")
 
 	fmt.Println("Complete for " + fips)
 	return rmap
@@ -197,14 +209,7 @@ func MeanOptimization(structdamages []float64, frequencies []float64, s conseque
 	return mean_dam, premium, freq
 }
 
-func GradientDescentOptimization(structdamages []float64, frequencies []float64, epochs int, learning_rate float64) float64 {
-	// plan
-	// without taking into account others' preferences
-	// without taking into account administrative costs
-	// make a depth damage curve based on Ollie's frequencies provided
-	// premium for just structure = frequency * structure damage
-	// the above frequencies would be trigger values
-	// WHERE IS THE OPTIMIZATION POTENTIAL HERE
+func GradientDescentOptimization(structdamages []float64, frequencies []float64, epochs int, learning_rate float64) (float64, float64, float64) {
 
 	// curve of trigger points (histogram of all 1000 homes) / premiums (histogram of all 1000 homes) / cumulative losses (all homes)
 	// summary of the results of the simulation
@@ -216,6 +221,8 @@ func GradientDescentOptimization(structdamages []float64, frequencies []float64,
 	// gradient descent method
 	// initialize the trigger value
 	trigger := 0.1 // the 1 in 10 year flood (10% chance any given year)
+	premium := 0.0
+	final_payout := 0.0
 	for epoch := 0; epoch < epochs; epoch++ {
 		uninsuredlosses := 0.0
 		// grab average annual loss
@@ -290,6 +297,8 @@ func GradientDescentOptimization(structdamages []float64, frequencies []float64,
 
 		// set premium to new premium
 		trigger = new_trigger
+		premium = trigger * data.SampleValue(trigger)
+		final_payout = data.SampleValue(trigger)
 		//fmt.Printf("New Trigger Value is %v", new_trigger)
 		//fmt.Println()
 		//fmt.Printf("Total loss of epoch %v was %v", epoch, uninsuredlosses)
@@ -302,5 +311,5 @@ func GradientDescentOptimization(structdamages []float64, frequencies []float64,
 	// how many people pay what premium to cover that?
 
 	// next week, show PDF of flood freq.. damage for elevation step function
-	return trigger
+	return final_payout, premium, trigger
 }

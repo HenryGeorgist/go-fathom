@@ -50,14 +50,20 @@ func TestSQL_MultiEvent_MultiState(t *testing.T) {
 
 func TestGPKByFips(t *testing.T) {
 	filepath := "/workspaces/go-fathom/data/nsiv2_29.gpkg"
-	nsp := sp.InitGPK(filepath, "nsi")
+	nsp, err := sp.InitGPK(filepath, "nsi")
+	if err != nil {
+		fmt.Println(err)
+	}
 	// take only the first 2000 structures to ensure it works in 30 seconds
 	fmt.Println(nsp.FilePath)
 	d := hazards.DepthEvent{}
 	d.SetDepth(2.4)
 	count := 0
 	nsp.ByFips("29005", func(s consequences.Receptor) {
-		r := s.Compute(d)
+		r, err := s.Compute(d)
+		if err != nil {
+			fmt.Println(err)
+		}
 		b, _ := json.Marshal(r)
 		fmt.Println(string(b))
 		count++

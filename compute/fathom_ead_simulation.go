@@ -40,7 +40,10 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 	index := 0
 	maxTransaction := 1000
 	//transaction := make([]interface{}, maxTransaction)
-	nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+	nsp, err := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+	if err != nil {
+		fmt.Println(err)
+	}
 	//l := nsp.*ds.LayerByName(gpk.LayerName)
 	//fc, _ := l.FeatureCount(true)
 
@@ -93,7 +96,10 @@ func ComputeMultiEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, db
 								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam, false)
 								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc, false)
 							} else {
-								r := s.Compute(depthevent)
+								r, err := s.Compute(depthevent)
+								if err != nil {
+									fmt.Println(err)
+								}
 								StructureDamage := r.Result[6].(float64) //based on convention - super risky
 								ContentDamage := r.Result[7].(float64)   //based on convention - super risky
 								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam, false)
@@ -320,7 +326,10 @@ func ComputeSingleEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, f
 	rmap := make(map[string]consequences.Result)
 	fmt.Println("Downloading NSI by fips " + fips)
 
-	nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+	nsp, err := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	processIndex := 0
 	start := time.Now()
@@ -350,7 +359,10 @@ func ComputeSingleEvent_NSIStream(ds hazard_providers.SQLDataSet, fips string, f
 				if depthevent.Depth() <= 0 {
 					//skip
 				} else {
-					r := s.Compute(depthevent)
+					r, err := s.Compute(depthevent)
+					if err != nil {
+						fmt.Println(err)
+					}
 					//StructureDamage := r.Result[6].(float64) //based on convention - super risky
 					//ContentDamage := r.Result[7].(float64)   //based on convention - super risky
 					//if val, ok := rmap[r.Headers[0]]; ok {
@@ -395,7 +407,10 @@ func ComputeSingleEvent_NSIStreamMonteCarlo(ds hazard_providers.SQLDataSet, fips
 		// set the seed
 		rand.Seed(time.Now().UnixNano())
 		// initialize the NSI
-		nsp := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+		nsp, err := sp.InitGPK("/workspaces/go-fathom/data/nsiv2_29.gpkg", "nsi")
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		fmt.Printf("Simulation Number %v", simnumber)
 		fmt.Println()
@@ -420,7 +435,10 @@ func ComputeSingleEvent_NSIStreamMonteCarlo(ds hazard_providers.SQLDataSet, fips
 					if depthevent.Depth() <= 0 {
 						//skip
 					} else {
-						r := s.Compute(depthevent)
+						r, err := s.Compute(depthevent)
+						if err != nil {
+							fmt.Println(err)
+						}
 						//StructureDamage := r.Result[6].(float64) //based on convention - super risky
 						//ContentDamage := r.Result[7].(float64)   //based on convention - super risky
 						//if val, ok := rmap[r.Headers[0]]; ok {
