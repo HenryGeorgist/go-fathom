@@ -24,7 +24,7 @@ func TestConvert(t *testing.T) {
 }
 func TestConvertNewFile(t *testing.T) {
 	fmap := census.StateToCountyFipsMap()
-	//fmap := []string{"11"}
+	//fmap := []string{"32", "42"}
 	var wg sync.WaitGroup
 	wg.Add(len(fmap))
 	//for _, ss := range fmap {
@@ -32,8 +32,8 @@ func TestConvertNewFile(t *testing.T) {
 		go func(ss string) {
 			defer wg.Done()
 			fmt.Println("Computing " + ss)
-			inpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_Uncertainty\\NSI_Fathom_depths%v.csv", ss)
-			outpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_Uncertainty\\NSI_Fathom_depths%v_feet.csv", ss)
+			inpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_3m_Uncertainty\\NSI_Fathom_depths_v4\\NSI_Fathom_depths%v.csv", ss)
+			outpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_3m_Uncertainty\\NSI_Fathom_depths%v_feet.csv", ss)
 			WriteBackToDisk(ConvertFile(inpath), outpath, true)
 			fmt.Println(ss + " Complete")
 		}(ss)

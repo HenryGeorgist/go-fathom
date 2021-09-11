@@ -155,8 +155,8 @@ func ConvertFile(file string) DataSet {
 		elements := 10
 		size := 5
 		if newData {
-			elements = 12
-			size = 6
+			elements = 10
+			size = 5
 		}
 		fluvial := true
 		cfvals := make([]float64, size)
@@ -214,6 +214,7 @@ func ConvertFile(file string) DataSet {
 			count++
 		} else {
 			//skipping.
+			fmt.Println("skipping " + fd_id)
 		}
 
 	}
@@ -239,8 +240,8 @@ func ReadFeetFile(file string) DataSet {
 	elements := 10
 	size := 5
 	if newData {
-		elements = 12
-		size = 6
+		elements = 10
+		size = 5
 	}
 	for scanner.Scan() {
 		lines := strings.Split(scanner.Text(), ",")
@@ -322,7 +323,7 @@ func hasValidData(fd_id string, ffvals []float64, fpvals []float64, cfvals []flo
 	//ff
 	records := 5
 	if newData {
-		records = 6
+		records = 5
 	}
 	ffvalid := true
 	fpvalid := true
@@ -388,7 +389,7 @@ func WriteBackToDisk(ds DataSet, outputPath string, newData bool) {
 	//FD_ID,fluv_2020_5yr,pluv_2020_5yr,fluv_2020_20yr,pluv_2020_20yr,fluv_2020_100yr,pluv_2020_100yr,fluv_2020_250yr,pluv_2020_250yr,fluv_2020_500yr,pluv_2020_500yr,fluv_2050_5yr,pluv_2050_5yr,fluv_2050_20yr,pluv_2050_20yr,fluv_2050_100yr,pluv_2050_100yr,fluv_2050_250yr,pluv_2050_250yr,fluv_2050_500yr,pluv_2050_500yr
 	w := bufio.NewWriter(f)
 	if newData {
-		w.WriteString("FD_ID,fluv_2020_2yr,cstl_2020_2yr,fluv_2020_5yr,cstl_2020_5yr,fluv_2020_20yr,cstl_2020_20yr,fluv_2020_100yr,cstl_2020_100yr,fluv_2020_250yr,cstl_2020_250yr,fluv_2020_500yr,cstl_2020_500yr,fluv_2050_2yr,cstl_2050_2yr,fluv_2050_5yr,cstl_2050_5yr,fluv_2050_20yr,cstl_2050_20yr,fluv_2050_100yr,cstl_2050_100yr,fluv_2050_250yr,cstl_2050_250yr,fluv_2050_500yr,cstl_2050_500yr\n")
+		w.WriteString("FD_ID,fluv_2020_5yr,cstl_2020_5yr,fluv_2020_20yr,cstl_2020_20yr,fluv_2020_100yr,cstl_2020_100yr,fluv_2020_250yr,cstl_2020_250yr,fluv_2020_500yr,cstl_2020_500yr,fluv_2050_5yr,cstl_2050_5yr,fluv_2050_20yr,cstl_2050_20yr,fluv_2050_100yr,cstl_2050_100yr,fluv_2050_250yr,cstl_2050_250yr,fluv_2050_500yr,cstl_2050_500yr\n")
 	} else {
 		w.WriteString("FD_ID,fluv_2020_5yr,pluv_2020_5yr,fluv_2020_20yr,pluv_2020_20yr,fluv_2020_100yr,pluv_2020_100yr,fluv_2020_250yr,pluv_2020_250yr,fluv_2020_500yr,pluv_2020_500yr,fluv_2050_5yr,pluv_2050_5yr,fluv_2050_20yr,pluv_2050_20yr,fluv_2050_100yr,pluv_2050_100yr,fluv_2050_250yr,pluv_2050_250yr,fluv_2050_500yr,pluv_2050_500yr\n")
 	}
@@ -397,7 +398,7 @@ func WriteBackToDisk(ds DataSet, outputPath string, newData bool) {
 	count := 0
 	records := 5
 	if newData {
-		records = 6
+		records = 5
 	}
 	for _, r := range ds.Data {
 		s := r.Fd_id + ","

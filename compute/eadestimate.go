@@ -5,7 +5,6 @@ import (
 	"math/rand"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
-	"github.com/USACE/go-consequences/compute"
 	"github.com/USACE/go-consequences/hazards"
 	"github.com/USACE/go-consequences/structures"
 )
@@ -26,7 +25,6 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 	counter := 0
 	for i := 0; i < iterations; i++ {
 		ds := s.SampleStructure(structureRand.Int63()) // sample a structure
-		//dsfc := sfc.Sample(stageFrequencyRand.Float64())
 		if ds.NumStories > 3 {
 			floorsval := ds.StructVal / float64(ds.NumStories)
 			floorcval := ds.ContVal / float64(ds.NumStories)
@@ -41,7 +39,7 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 			var condam interface{}
 			stdam = 0.0
 			condam = 0.0
-			if sfc.Frequencies[idx] < .1 { //no damage more frequently than the x year
+			if sfc.Frequencies[idx] < .5 { //no damage more frequently than the x year
 				if d > 0 {
 					de := hazards.DepthEvent{}
 					de.SetDepth(d)
@@ -58,30 +56,16 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 						panic(err)
 					}
 				}
+
 			}
 
 			sdam := stdam.(float64)
 			cdam := condam.(float64)
 			tdam := sdam + cdam
-			/*totval := ds.StructVal + ds.ContVal
-			dampercent := tdam / (totval)
-			if totval == 0 {
-				dampercent = 0
-			}*/
 			realizationDamages[idx] = tdam
 
 		}
-		eadEst := compute.ComputeSpecialEAD(realizationDamages, sfc.Frequencies)
-		/*if math.IsNaN(eadEst) {
-			fmt.Println(fmt.Sprintf("%v", eadEst))
-		}
-		if eadEst < 0 {
-			fmt.Println(fmt.Sprintf("%v", eadEst))
-		}
-		if eadEst > 1 {
-			fmt.Println(fmt.Sprintf("%v", eadEst))
-		}*/
-		//eaddist.AddObservation(eadEst)
+		eadEst := ComputeSpecialEAD(realizationDamages, sfc.Frequencies)
 		if eadEst == 0 {
 			counter += 1
 		}
@@ -91,4 +75,53 @@ func ComputeEadDistribution(sfc hazard_providers.StageFrequencyCurve, s structur
 		return eadlist, errors.New("no damages detected.")
 	}
 	return eadlist, nil
+}
+
+//ComputeSpecialEAD integrates under the damage frequency curve but does not calculate the first triangle between 1 and the first frequency.
+func ComputeSpecialEAD(damages []float64, freq []float64) float64 {
+	//this differs from computeEAD in that it specifically does not calculate the first triangle between 1 and the first frequency to interpolate damages to zero.
+	if len(damages) != len(freq) {
+		panic("frequency curve is unbalanced")
+	}
+	triangle := 0.0
+	square := 0.0
+	x1 := freq[0]
+	y1 := damages[0]
+	eadT := 0.0
+	twentyYearIndex := -1
+	twentyYearHasDamages := false
+	if len(damages) > 1 {
+		for i := 1; i < len(freq); i++ {
+			xdelta := x1 - freq[i]
+
+			square = xdelta * y1
+
+			if freq[i] == .05 {
+				twentyYearIndex = i
+				if damages[i] > 0 {
+					twentyYearHasDamages = true
+				}
+			}
+			if square != 0.0 { //we dont know where damage really begins until we see it. we can guess it is inbetween ordinates, but who knows.
+				triangle = ((xdelta) * -(y1 - damages[i])) / 2.0
+			} else {
+				triangle = 0.0
+			}
+			eadT += square + triangle
+			x1 = freq[i]
+			y1 = damages[i]
+		}
+	}
+	if x1 != 0.0 {
+		xdelta := x1 - 0.0
+		eadT += xdelta * y1 //no extrapolation, just continue damages out as if it were truth for all remaining probability.
+	}
+	if twentyYearHasDamages {
+		base := .1 - .05
+		base = .5 * base //1/2 base times height.
+		height := damages[twentyYearIndex]
+		triangle := base * height
+		eadT += triangle
+	}
+	return eadT
 }
