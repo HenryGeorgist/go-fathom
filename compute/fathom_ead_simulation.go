@@ -1,342 +1,135 @@
 package compute
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/HenryGeorgist/go-fathom/hazard_providers"
-	"github.com/HenryGeorgist/go-fathom/store"
-	"github.com/USACE/go-consequences/census"
-	comp "github.com/USACE/go-consequences/compute"
-	hp "github.com/USACE/go-consequences/hazardproviders"
-	"github.com/USACE/go-consequences/hazards"
-	"github.com/USACE/go-consequences/nsi"
+	fstructs "github.com/HenryGeorgist/go-fathom/structures"
+	"github.com/HydrologicEngineeringCenter/go-statistics/data"
+	"github.com/USACE/go-consequences/consequences"
 	"github.com/USACE/go-consequences/structures"
 )
 
-func ComputeMultiFips_MultiEvent(ds hp.HazardProvider) {
-	db := store.CreateWALDatabase()
-	defer db.Close()
-	fmap := census.StateToCountyFipsMap()
-	var wg sync.WaitGroup
-	wg.Add(len(fmap))
-	for ss, _ := range fmap {
-		go func(state string) {
-			defer wg.Done()
-			ComputeMultiEvent_NSIStream(ds, state, db)
-		}(ss)
-	}
-	wg.Wait()
-}
-func ComputeMultiEvent_NSIStream(ds hp.HazardProvider, fips string, db *sql.DB) bool {
-	fmt.Println("Downloading NSI by fips " + fips)
+func ComputeEadByFips(ds hazard_providers.StochasticDataSet, sp consequences.StreamProvider, fips string, outputFile *os.File, iterations int) bool {
+	fmt.Println("Computing by fips for " + fips)
+	stringifiedHeaders := make([]string, 4)
+	stringifiedHeaders[0] = writeHistoHeader("fluv", 2020, iterations)
+	stringifiedHeaders[1] = writeHistoHeader("fluv", 2050, iterations)
+	stringifiedHeaders[2] = writeHistoHeader("cstl", 2020, iterations)
+	stringifiedHeaders[3] = writeHistoHeader("cstl", 2050, iterations)
+	outputFile.WriteString(fmt.Sprintf("FD_ID,X,Y,County,CB,OccType,DamCat,foundHt,StructVal,ContVal%s%s%s%s\n", stringifiedHeaders[0], stringifiedHeaders[2], stringifiedHeaders[1], stringifiedHeaders[3]))
 	years := [2]int{2020, 2050}
-	frequencies := [5]int{5, 20, 100, 250, 500} //for new data, this should be {2,5,20, 100, 250,500}//
 	fluvial := [2]bool{true, false}
-	tx, _ := db.Begin()
+	eads := make([][]float64, 4)
+	eadsExists := make([]bool, 4)
 	index := 0
-	maxTransaction := 1000
-	//transaction := make([]interface{}, maxTransaction)
-	nsi.GetByFipsStream(fips, func(feature nsi.NsiFeature) {
-		m := structures.OccupancyTypeMap()
-		defaultOcctype := m["RES1-1SNB"]
-		str := comp.NsiFeaturetoStructure(feature, m, defaultOcctype)
-		//check to see if the structure exists for a first "default event"
-		fe := hazard_providers.FathomEvent{Year: 2050, Frequency: 500, Fluvial: true}
-		fq := hazard_providers.FathomQuery{Fd_id: str.Name, FathomEvent: fe}
-		_, err := ds.ProvideHazard(fq)
-		if err == nil {
-			//structure presumably exists?
-			cfdam := make([]float64, 5) //for new data this needs to be 6//
-			cpdam := make([]float64, 5)
-			ffdam := make([]float64, 5)
-			fpdam := make([]float64, 5)
-			cfdamc := make([]float64, 5)
-			cpdamc := make([]float64, 5)
-			ffdamc := make([]float64, 5)
-			fpdamc := make([]float64, 5)
-			for _, flu := range fluvial {
-				//hazard := "pluvial"
-				//if flu {
-				//hazard = "fluvial"
-				//}
-				for _, y := range years {
-					for _, f := range frequencies {
+	otfdm := FoundationDistributionMap()
+	focctypes := fstructs.OccupancyTypeMap()
+	crawlfhd := otfdm["Craw"]
+	fhd := otfdm["Slab"]
+	ok := true
+	sp.ByFips(fips, func(cr consequences.Receptor) {
+		str, sok := cr.(structures.StructureStochastic)
+		if iterations != 1 {
+			focctype, ook := focctypes[str.OccType.Name]
+			if ook {
+				str.OccType = focctype
+				str.ContVal = consequences.ParameterValue{Value: str.StructVal.CentralTendency() * .4}
+			}
+			fhd, ok = otfdm[str.FoundType]
+			if ok {
+				str.FoundHt = consequences.ParameterValue{Value: fhd}
+			}
+		}
 
-						fe = hazard_providers.FathomEvent{Year: y, Frequency: f, Fluvial: flu}
-						fq.FathomEvent = fe
-						result, _ := ds.ProvideHazard(fq)
-						depthevent, okd := result.(hazards.DepthEvent)
-						if okd {
-							if depthevent.Depth <= 0 {
-								//skip
-								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam, false)
-								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc, false)
-							} else {
-								r := str.Compute(depthevent)
-								StructureDamage := r.Result.Result[0].(float64) //based on convention - super risky
-								ContentDamage := r.Result.Result[1].(float64)   //based on convention - super risky
-								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam, false)
-								assignDamage(flu, y, f, ContentDamage, ffdamc, fpdamc, cfdamc, cpdamc, false)
-								//transaction[index] = store.CreateResult(str.Name, y, hazard, fmt.Sprint(f), StructureDamage, ContentDamage)
-								//index++
-								//store.WriteToDatabase(stmt, str.Name, y, hazard, fmt.Sprint(f), StructureDamage, ContentDamage)
-								//store.WriteToTransaction(tx, str.Name, y, hazard, fmt.Sprint(f), StructureDamage, ContentDamage)
-								//if index >= maxTransaction {
-								//store.WriteArrayToDatabase(db, transaction)
-								//index = 0
-								//}
+		if sok {
+			//check to see if the structure exists for a first "default event"
+			index = 0
+			_, exists := ds.Data[str.Name] //checking to see if data exists.
+			if exists {
+				for _, flu := range fluvial {
+					if iterations != 1 {
+						if !flu {
+							if str.FoundType == "Pier" {
+								str.FoundHt = consequences.ParameterValue{Value: fhd}
+							} else if str.FoundType == "Pile" {
+								str.FoundHt = consequences.ParameterValue{Value: fhd}
+							}
+						} else {
+							if str.FoundType == "Pier" {
+								str.FoundHt = consequences.ParameterValue{Value: crawlfhd}
+							} else if str.FoundType == "Pile" {
+								str.FoundHt = consequences.ParameterValue{Value: crawlfhd}
 							}
 						}
 					}
 
-				}
-			}
-
-			//compute ead's for each of the 4 caases for structure and content.
-			freq := []float64{.2, .05, .01, .004, .002} //5,20,100,250,500
-			//freq:= []float64{.5,.2,.05,.01,004,.002}//for newData
-			cfead := comp.ComputeSpecialEAD(cfdam, freq)
-			cpead := comp.ComputeSpecialEAD(cpdam, freq)
-			ffead := comp.ComputeSpecialEAD(ffdam, freq)
-			fpead := comp.ComputeSpecialEAD(fpdam, freq)
-
-			cfeadc := comp.ComputeSpecialEAD(cfdamc, freq)
-			cpeadc := comp.ComputeSpecialEAD(cpdamc, freq)
-			ffeadc := comp.ComputeSpecialEAD(ffdamc, freq)
-			fpeadc := comp.ComputeSpecialEAD(fpdamc, freq)
-			if cfead > cpead {
-				//transaction[index] = store.CreateResult(str.Name, str.X, str.Y, fips, years[0], "fluvial", "EAD", cfead, cfeadc)
-				store.WriteToTransaction(tx, str.Name, str.X, str.Y, fips, years[0], "fluvial", "EAD", cfead, cfeadc)
-				index++ //what if we exceed 500...
-				if index >= maxTransaction {
-					//store.WriteArrayToDatabase(db, transaction)
-					//store.WriteArrayToTransaction(tx, transaction)
-					tx.Commit()
-					tx, _ = db.Begin()
-					index = 0
-				}
-			} else {
-				if cpead > 0.0 { //should we exclude zero ead for one year but not the other?
-					//transaction[index] = store.CreateResult(str.Name, str.X, str.Y, fips, years[0], "pluvial", "EAD", cpead, cpeadc)
-					store.WriteToTransaction(tx, str.Name, str.X, str.Y, fips, years[0], "pluvial", "EAD", cpead, cpeadc)
-					index++
-					if index >= maxTransaction {
-						//store.WriteArrayToDatabase(db, transaction)
-						//store.WriteArrayToTransaction(tx, transaction)
-						tx.Commit()
-						tx, _ = db.Begin()
-						index = 0
-					}
-				}
-
-			}
-			if ffead > fpead {
-				//transaction[index] = store.CreateResult(str.Name, str.X, str.Y, fips, years[1], "fluvial", "EAD", ffead, ffeadc)
-				store.WriteToTransaction(tx, str.Name, str.X, str.Y, fips, years[1], "fluvial", "EAD", ffead, ffeadc)
-				index++
-				if index >= maxTransaction {
-					//store.WriteArrayToDatabase(db, transaction)
-					//store.WriteArrayToTransaction(tx, transaction)
-					tx.Commit()
-					tx, _ = db.Begin()
-					index = 0
-				}
-			} else {
-				if fpead > 0.0 {
-					//transaction[index] = store.CreateResult(str.Name, str.X, str.Y, fips, years[1], "pluvial", "EAD", fpead, fpeadc)
-					store.WriteToTransaction(tx, str.Name, str.X, str.Y, fips, years[1], "pluvial", "EAD", fpead, fpeadc)
-					index++
-					if index >= maxTransaction {
-						//store.WriteArrayToDatabase(db, transaction)
-						//store.WriteArrayToTransaction(tx, transaction)
-						tx.Commit()
-						tx, _ = db.Begin()
-						index = 0
-					}
-				}
-
-			}
-		}
-	})
-	if index > 0 {
-		//smalltransaction := transaction[0 : index-1]
-		//store.WriteArrayToDatabase(db, smalltransaction)
-		tx.Commit()
-		//store.WriteArrayToTransaction(tx, smalltransaction)
-		index = 0
-	}
-	//tx.Commit()
-	fmt.Println("Completed Computing by fips " + fips)
-	return true
-}
-func ComputeMultiEvent_NSIStream_toFile_withNew(ds hp.HazardProvider, fips string, outputFile *os.File, newData bool) bool {
-	fmt.Println("Downloading NSI by fips " + fips)
-	outputFile.WriteString("FD_ID,X,Y,County,CB,OccType,DamCat,foundHt,StructVal,ContVal,PopDay,PopNight,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
-	years := [2]int{2020, 2050}
-	frequencies := []int{5, 20, 100, 250, 500}
-	freq := []float64{.2, .05, .01, .004, .002}
-	size := 5
-	if newData {
-		frequencies = []int{2, 5, 20, 100, 250, 500}
-		size = 6
-		freq = []float64{.5, .2, .05, .01, .004, .002}
-	}
-	fluvial := [2]bool{true, false}
-	//index := 0
-	m := structures.OccupancyTypeMap()
-	defaultOcctype := m["RES1-1SNB"]
-	nsi.GetByFipsStream(fips, func(feature nsi.NsiFeature) {
-		str := comp.NsiFeaturetoStructure(feature, m, defaultOcctype)
-		//check to see if the structure exists for a first "default event"
-		fe := hazard_providers.FathomEvent{Year: 2050, Frequency: 500, Fluvial: true}
-		fq := hazard_providers.FathomQuery{Fd_id: str.Name, FathomEvent: fe}
-		_, err := ds.ProvideHazard(fq)
-		if err == nil {
-			cfdam := make([]float64, size)
-			cpdam := make([]float64, size)
-			ffdam := make([]float64, size)
-			fpdam := make([]float64, size)
-			cfdamc := make([]float64, size)
-			cpdamc := make([]float64, size)
-			ffdamc := make([]float64, size)
-			fpdamc := make([]float64, size)
-			for _, flu := range fluvial {
-				for _, y := range years {
-					for _, f := range frequencies {
-						fe = hazard_providers.FathomEvent{Year: y, Frequency: f, Fluvial: flu}
-						fq.FathomEvent = fe
-						result, _ := ds.ProvideHazard(fq)
-						depthevent, okd := result.(hazards.DepthEvent)
-						if okd {
-							if depthevent.Depth <= 0 {
-								//skip
-								assignDamage(flu, y, f, 0, ffdam, fpdam, cfdam, cpdam, newData)
-								assignDamage(flu, y, f, 0, ffdamc, fpdamc, cfdamc, cpdamc, newData)
+					for _, y := range years {
+						sfc, err := ds.ProvideStageFrequencyCurve(str.Name, y, flu)
+						if err == nil {
+							ih, err := ComputeEadDistribution(sfc, str, iterations) // binWidth, binStart, binEnd, iterations)
+							eads[index] = ih
+							if err != nil {
+								eadsExists[index] = false
 							} else {
-								r := str.Compute(depthevent)
-								StructureDamage := r.Result.Result[0].(float64) //based on convention - super risky
-								ContentDamage := r.Result.Result[1].(float64)   //based on convention - super risky
-								assignDamage(flu, y, f, StructureDamage, ffdam, fpdam, cfdam, cpdam, newData)
-								assignDamage(flu, y, f, ContentDamage, ffdamc, fpdamc, cfdamc, cpdamc, newData)
+								eadsExists[index] = true
 							}
+						} else {
+							eadsExists[index] = false
 						}
+						index += 1
 					}
-
 				}
-			}
-			//compute ead's for each of the 4 caases for structure and content.
-			cfead := comp.ComputeSpecialEAD(cfdam, freq)
-			cpead := comp.ComputeSpecialEAD(cpdam, freq)
-			ffead := comp.ComputeSpecialEAD(ffdam, freq)
-			fpead := comp.ComputeSpecialEAD(fpdam, freq)
-
-			cfeadc := comp.ComputeSpecialEAD(cfdamc, freq)
-			cpeadc := comp.ComputeSpecialEAD(cpdamc, freq)
-			ffeadc := comp.ComputeSpecialEAD(ffdamc, freq)
-			fpeadc := comp.ComputeSpecialEAD(fpdamc, freq)
-			//write to output file.
-			//outputFile.WriteString("FD_ID,X,Y,County,CB,OccType,DamCat,foundHt,StructVal,ContVal,PopDay,PopNight,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
-			county := feature.Properties.CB[0:5] //county is first five characters of the cb.
-			outputFile.WriteString(fmt.Sprintf("%s,%f,%f,%s,%s,%s,%s,%f,%f,%f,%d,%d,%f,%f,%f,%f\n", str.Name, str.X, str.Y, county, feature.Properties.CB, feature.Properties.Occtype, feature.Properties.DamCat, feature.Properties.FoundHt, feature.Properties.StructVal, feature.Properties.ContVal, feature.Properties.Pop2amu65+feature.Properties.Pop2amo65, feature.Properties.Pop2pmu65+feature.Properties.Pop2pmo65, cfead+cfeadc, cpead+cpeadc, ffead+ffeadc, fpead+fpeadc))
-		}
-	})
-
-	fmt.Println("Completed Computing by fips " + fips)
-	return true
-}
-func frequencyIndex(frequency int, newData bool) int {
-	if newData {
-		switch frequency {
-		case 2:
-			return 0
-		case 5:
-			return 1
-		case 20:
-			return 2
-		case 100:
-			return 3
-		case 250:
-			return 4
-		case 500:
-			return 5
-		default:
-			return -1 //bad frequency
-		}
-	}
-	switch frequency {
-	case 5:
-		return 0
-	case 20:
-		return 1
-	case 100:
-		return 2
-	case 250:
-		return 3
-	case 500:
-		return 4
-	default:
-		return -1 //bad frequency
-	}
-}
-func assignDamage(fluvial bool, year int, frequency int, damage float64, ffdam []float64, fpdam []float64, cfdam []float64, cpdam []float64, newData bool) {
-	if fluvial {
-		if year == 2020 {
-			cfdam[frequencyIndex(frequency, newData)] = damage
-		} else if year == 2050 {
-			ffdam[frequencyIndex(frequency, newData)] = damage
-		}
-	} else {
-		if year == 2020 {
-			cpdam[frequencyIndex(frequency, newData)] = damage
-		} else if year == 2050 {
-			fpdam[frequencyIndex(frequency, newData)] = damage
-		}
-	}
-
-}
-func ComputeSingleEvent_NSIStream(ds hazard_providers.DataSet, fips string, fe hazard_providers.FathomEvent) {
-	rmap := make(map[string]comp.SimulationSummaryRow)
-	fmt.Println("Downloading NSI by fips " + fips)
-	nsi.GetByFipsStream(fips, func(feature nsi.NsiFeature) {
-		m := structures.OccupancyTypeMap()
-		defaultOcctype := m["RES1-1SNB"]
-		str := comp.NsiFeaturetoStructure(feature, m, defaultOcctype)
-		fq := hazard_providers.FathomQuery{Fd_id: str.Name, FathomEvent: fe}
-		result, err := ds.ProvideHazard(fq)
-		if err == nil {
-			//structure presumably exists?
-			depthevent, okd := result.(hazards.DepthEvent)
-			if okd {
-				if depthevent.Depth <= 0 {
-					//skip
-				} else {
-					r := str.Compute(depthevent)
-					if val, ok := rmap[str.DamCat]; ok {
-						val.StructureCount += 1
-						val.StructureDamage += r.Result.Result[0].(float64) //based on convention - super risky
-						val.ContentDamage += r.Result.Result[1].(float64)   //based on convention - super risky
-						rmap[str.DamCat] = val
+				//write to output file.
+				//results := make([]float64, 4)
+				stringifiedhistos := make([]string, 4)
+				eadsum := 0.0
+				for idx, b := range eadsExists {
+					if b {
+						//results[idx] = eads[idx].Mean() * (str.ContVal.CentralTendency() + str.StructVal.CentralTendency())
+						eadsum += 1 //results[idx]
+						stringifiedhistos[idx] = writeHistoValues(eads[idx])
 					} else {
-						rmap[str.DamCat] = comp.SimulationSummaryRow{RowHeader: str.DamCat, StructureCount: 1, StructureDamage: r.Result.Result[0].(float64), ContentDamage: r.Result.Result[1].(float64)}
+						//results[idx] = 0
+						stringifiedhistos[idx] = writeNilHistoValues(eads[idx], iterations)
 					}
 				}
+				//outputFile.WriteString("FD_ID,X,Y,County,CB,OccType,DamCat,foundHt,StructVal,ContVal,PopDay,PopNight,fluv_2020_EAD,cstl_2020_EAD,fluv_2050_EAD,cstl_2050_EAD\n")
+				county := str.CBFips[0:5] //county is first five characters of the cb.
+				if eadsum > 0 {
+					outputFile.WriteString(fmt.Sprintf("%s,%f,%f,%s,%s,%s,%s,%f,%f,%f%s%s%s%s\n", str.Name, str.X, str.Y, county, str.CBFips, str.OccType.Name, str.DamCat, str.FoundHt.CentralTendency(), str.StructVal.CentralTendency(), str.ContVal.CentralTendency(), stringifiedhistos[0], stringifiedhistos[2], stringifiedhistos[1], stringifiedhistos[3]))
+				}
 			}
-
 		}
 
 	})
-	rows := make([]comp.SimulationSummaryRow, len(rmap))
-	idx := 0
-	//s := "COMPLETE FOR SIMULATION" + "\n"
-	for _, val := range rmap {
-		fmt.Println(fmt.Sprintf("for %s, there were %d structures with %f structure damages %f content damages for damage category %s", fips, val.StructureCount, val.StructureDamage, val.ContentDamage, val.RowHeader))
-		//s += fmt.Sprintf("for %s, there were %d structures with %f structure damages %f content damages for damage category %s", fips, val.StructureCount, val.StructureDamage, val.ContentDamage, val.RowHeader) + "\n"
-		rows[idx] = val
-		idx++
+	fmt.Println("Completed Computing by fips " + fips)
+	return true
+}
+func writeHistoHeader(fluv string, year int, iterations int) string {
+	ret := ""
+	for i := 0; i < iterations; i++ {
+		ret += fmt.Sprintf(",%s_%v_%v", fluv, year, i+1)
 	}
-
-	fmt.Println("Complete for" + fips)
+	ret += fmt.Sprintf(",%s_%v_MeanEAD", fluv, year)
+	return ret
+}
+func writeHistoValues(ih []float64) string {
+	ret := ""
+	pm := data.CreateProductMoments()
+	for _, d := range ih {
+		ret += fmt.Sprintf(",%f", d)
+		pm.AddObservation(d)
+	}
+	ret += fmt.Sprintf(",%f", pm.GetMean())
+	return ret
+}
+func writeNilHistoValues(ih []float64, iterations int) string {
+	ret := ""
+	for i := 0; i < iterations; i++ {
+		ret += fmt.Sprintf(",%f", 0.0)
+	}
+	ret += fmt.Sprintf(",%f", 0.0)
+	return ret
 }

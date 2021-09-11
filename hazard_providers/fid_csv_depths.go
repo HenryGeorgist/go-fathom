@@ -77,34 +77,56 @@ func generateDepthEvent(frequency int, data FrequencyData, newData bool) (hazard
 	switch frequency {
 	case 2:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[0]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[0])
+			return h, nil
 		}
 		return hazards.DepthEvent{}, hazardproviders.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
 	case 5:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[1]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[1])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[0]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[0])
+		return h, nil
 	case 20:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[2]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[2])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[1]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[1])
+		return h, nil
 	case 100:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[3]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[3])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[2]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[2])
+		return h, nil
 	case 250:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[4]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[4])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[3]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[3])
+		return h, nil
 	case 500:
 		if newData {
-			return hazards.DepthEvent{Depth: data.Values[5]}, nil
+			h := hazards.DepthEvent{}
+			h.SetDepth(data.Values[5])
+			return h, nil
 		}
-		return hazards.DepthEvent{Depth: data.Values[4]}, nil
+		h := hazards.DepthEvent{}
+		h.SetDepth(data.Values[4])
+		return h, nil
 	default:
 		return hazards.DepthEvent{}, hazardproviders.NoFrequencyFoundError{Input: fmt.Sprintf("%v", frequency)} //bad frequency
 	}
@@ -133,8 +155,8 @@ func ConvertFile(file string) DataSet {
 		elements := 10
 		size := 5
 		if newData {
-			elements = 12
-			size = 6
+			elements = 10
+			size = 5
 		}
 		fluvial := true
 		cfvals := make([]float64, size)
@@ -151,23 +173,30 @@ func ConvertFile(file string) DataSet {
 				//2050
 				if fluvial {
 					ffvals[ffidx], err = strconv.ParseFloat(lines[i], 64)
-					ffvals[ffidx] = ffvals[ffidx] / 30.48 //centimeters to feet
+					if ffvals[ffidx] != 9999.0 {
+						ffvals[ffidx] = ffvals[ffidx] / 30.48 //centimeters to feet
+					}
 					ffidx++
 				} else {
 					fpvals[fpidx], err = strconv.ParseFloat(lines[i], 64)
-					fpvals[fpidx] = fpvals[fpidx] / 30.48 //centimeters to feet
-					fpidx++                               //new data coastal...
+					if fpvals[fpidx] != 9999.0 {
+						fpvals[fpidx] = fpvals[fpidx] / 30.48 //centimeters to feet
+					}
+					fpidx++ //new data coastal...
 				}
 			} else {
 				//2020
 				if fluvial {
 					cfvals[cfidx], err = strconv.ParseFloat(lines[i], 64)
-					//fmt.Println("current fluvial")
-					cfvals[cfidx] = cfvals[cfidx] / 30.48 //centimeters to feet
+					if cfvals[cfidx] != 9999.0 {
+						cfvals[cfidx] = cfvals[cfidx] / 30.48 //centimeters to feet
+					}
 					cfidx++
 				} else {
 					cpvals[cpidx], err = strconv.ParseFloat(lines[i], 64)
-					cpvals[cpidx] = cpvals[cpidx] / 30.48 //centimeters to feet
+					if cpvals[cpidx] != 9999.0 {
+						cpvals[cpidx] = cpvals[cpidx] / 30.48 //centimeters to feet
+					}
 					//fmt.Println("current pluvial") //new data coastal...
 					cpidx++
 				}
@@ -185,6 +214,7 @@ func ConvertFile(file string) DataSet {
 			count++
 		} else {
 			//skipping.
+			fmt.Println("skipping " + fd_id)
 		}
 
 	}
@@ -210,8 +240,8 @@ func ReadFeetFile(file string) DataSet {
 	elements := 10
 	size := 5
 	if newData {
-		elements = 12
-		size = 6
+		elements = 10
+		size = 5
 	}
 	for scanner.Scan() {
 		lines := strings.Split(scanner.Text(), ",")
@@ -271,21 +301,19 @@ func ReadFeetFile(file string) DataSet {
 	return ds
 }
 func hasNonZeroValues(ffvals []float64, fpvals []float64, cfvals []float64, cpvals []float64, newData bool) bool {
-	records := 5
-	if newData {
-		records = 6
-	}
+	records := len(ffvals)
+	missingDataValue := 9999.0
 	for i := 0; i < records; i++ {
-		if ffvals[i] > 0 {
+		if ffvals[i] != missingDataValue {
 			return true
 		}
-		if fpvals[i] > 0 {
+		if fpvals[i] != missingDataValue {
 			return true
 		}
-		if cfvals[i] > 0 {
+		if cfvals[i] != missingDataValue {
 			return true
 		}
-		if cpvals[i] > 0 {
+		if cpvals[i] != missingDataValue {
 			return true
 		}
 	}
@@ -295,7 +323,7 @@ func hasValidData(fd_id string, ffvals []float64, fpvals []float64, cfvals []flo
 	//ff
 	records := 5
 	if newData {
-		records = 6
+		records = 5
 	}
 	ffvalid := true
 	fpvalid := true
@@ -304,20 +332,28 @@ func hasValidData(fd_id string, ffvals []float64, fpvals []float64, cfvals []flo
 	datasetvalid := true
 	for i := 1; i < records; i++ {
 		if ffvals[i] < ffvals[i-1] {
-			ffvalid = false
-			datasetvalid = false
+			if ffvals[i-1] != 9999 {
+				ffvalid = false
+				datasetvalid = false
+			}
 		}
 		if fpvals[i] < fpvals[i-1] {
-			fpvalid = false
-			datasetvalid = false
+			if fpvals[i-1] != 9999 {
+				fpvalid = false
+				datasetvalid = false
+			}
 		}
 		if cfvals[i] < cfvals[i-1] {
-			cfvalid = false
-			datasetvalid = false
+			if cfvals[i-1] != 9999 {
+				cfvalid = false
+				datasetvalid = false
+			}
 		}
 		if cpvals[i] < cpvals[i-1] {
-			cpvalid = false
-			datasetvalid = false
+			if cpvals[i-1] != 9999 {
+				cpvalid = false
+				datasetvalid = false
+			}
 		}
 	}
 	if !datasetvalid {
@@ -353,7 +389,7 @@ func WriteBackToDisk(ds DataSet, outputPath string, newData bool) {
 	//FD_ID,fluv_2020_5yr,pluv_2020_5yr,fluv_2020_20yr,pluv_2020_20yr,fluv_2020_100yr,pluv_2020_100yr,fluv_2020_250yr,pluv_2020_250yr,fluv_2020_500yr,pluv_2020_500yr,fluv_2050_5yr,pluv_2050_5yr,fluv_2050_20yr,pluv_2050_20yr,fluv_2050_100yr,pluv_2050_100yr,fluv_2050_250yr,pluv_2050_250yr,fluv_2050_500yr,pluv_2050_500yr
 	w := bufio.NewWriter(f)
 	if newData {
-		w.WriteString("FD_ID,fluv_2020_2yr,cstl_2020_2yr,fluv_2020_5yr,cstl_2020_5yr,fluv_2020_20yr,cstl_2020_20yr,fluv_2020_100yr,cstl_2020_100yr,fluv_2020_250yr,cstl_2020_250yr,fluv_2020_500yr,cstl_2020_500yr,fluv_2050_2yr,cstl_2050_2yr,fluv_2050_5yr,cstl_2050_5yr,fluv_2050_20yr,cstl_2050_20yr,fluv_2050_100yr,cstl_2050_100yr,fluv_2050_250yr,cstl_2050_250yr,fluv_2050_500yr,cstl_2050_500yr\n")
+		w.WriteString("FD_ID,fluv_2020_5yr,cstl_2020_5yr,fluv_2020_20yr,cstl_2020_20yr,fluv_2020_100yr,cstl_2020_100yr,fluv_2020_250yr,cstl_2020_250yr,fluv_2020_500yr,cstl_2020_500yr,fluv_2050_5yr,cstl_2050_5yr,fluv_2050_20yr,cstl_2050_20yr,fluv_2050_100yr,cstl_2050_100yr,fluv_2050_250yr,cstl_2050_250yr,fluv_2050_500yr,cstl_2050_500yr\n")
 	} else {
 		w.WriteString("FD_ID,fluv_2020_5yr,pluv_2020_5yr,fluv_2020_20yr,pluv_2020_20yr,fluv_2020_100yr,pluv_2020_100yr,fluv_2020_250yr,pluv_2020_250yr,fluv_2020_500yr,pluv_2020_500yr,fluv_2050_5yr,pluv_2050_5yr,fluv_2050_20yr,pluv_2050_20yr,fluv_2050_100yr,pluv_2050_100yr,fluv_2050_250yr,pluv_2050_250yr,fluv_2050_500yr,pluv_2050_500yr\n")
 	}
@@ -362,7 +398,7 @@ func WriteBackToDisk(ds DataSet, outputPath string, newData bool) {
 	count := 0
 	records := 5
 	if newData {
-		records = 6
+		records = 5
 	}
 	for _, r := range ds.Data {
 		s := r.Fd_id + ","
@@ -382,5 +418,8 @@ func WriteBackToDisk(ds DataSet, outputPath string, newData bool) {
 		w.WriteString(s)
 		w.Flush()
 	}
+
+}
+func (h DataSet) Close() {
 
 }
