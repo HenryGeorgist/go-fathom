@@ -18,7 +18,7 @@ import (
 )
 
 func TestCompute_UserProvidedList(t *testing.T) {
-	ss := []string{"24"} //[]string{"02", "05", "15", "41", "20", "56", "45"}
+	ss := []string{"53"} //[]string{"02", "05", "15", "41", "20", "56", "45"}
 	st := time.Now()
 	var wg sync.WaitGroup
 	wg.Add(len(ss))
@@ -34,9 +34,9 @@ func TestCompute_UserProvidedList(t *testing.T) {
 	fmt.Println(diff)
 }
 func computeState(ss string) {
-	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_3m_Uncertainty\\NSI_Fathom_depths%v_feet.csv", ss)
+	path := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_v5\\NSI_Fathom_depths%v_feet.csv", ss)
 	ds := hazard_providers.ReadFeetFile(path)
-	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_3m_Uncertainty\\NSI_Fathom_damages_%v_v4.csv", ss)
+	outputpath := fmt.Sprintf("C:\\Users\\Q0HECWPL\\Documents\\NSI\\NSI_Fathom_depths\\NSI_Fathom_depths_v5\\NSI_Fathom_damages_%v_v5.csv", ss)
 	outputFile, err := os.Create(outputpath)
 	defer outputFile.Close()
 	if err != nil {
